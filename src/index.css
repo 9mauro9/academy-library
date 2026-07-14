@@ -331,11 +331,19 @@ body {
   background: var(--accent-gradient);
   border: none;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  color: var(--text-primary);
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  background: var(--accent-gradient);
+  opacity: 0.95;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5);
+}
+
+.btn-primary:active {
+  background: #4f46e5;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  opacity: 0.8;
 }
 
 /* Scrollbars */
