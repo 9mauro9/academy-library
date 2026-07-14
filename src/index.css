@@ -37,6 +37,41 @@
   --glass-border: rgba(115, 138, 150, 0.15);
 }
 
+body.light-theme {
+  --bg-primary: #f5f7fa;         /* Clean light grey-blue */
+  --bg-secondary: #ffffff;       /* White panels */
+  --bg-tertiary: #eef2f6;        /* Light blue-grey cards */
+  --text-primary: #090e1a;       /* Deep dark navy */
+  --text-secondary: #58585B;     /* Arista Dark Gray */
+  --text-muted: #738a96;         /* Arista Gray Blue */
+  
+  --class-bg: rgba(20, 96, 149, 0.08); /* Transparent blue */
+  --class-border: rgba(20, 96, 149, 0.25);
+  --class-text: #146095;
+  
+  --lab-bg: rgba(212, 113, 34, 0.08);   /* Transparent orange */
+  --lab-border: rgba(212, 113, 34, 0.25);
+  --lab-text: #d47122;
+  
+  --break-bg: rgba(170, 208, 55, 0.08); /* Transparent light green */
+  --break-border: rgba(170, 208, 55, 0.25);
+  --break-text: #8cb026;
+  
+  --lunch-bg: rgba(233, 213, 84, 0.1);  /* Transparent yellow */
+  --lunch-border: rgba(233, 213, 84, 0.3);
+  --lunch-text: #bfa213;
+
+  --border-color: rgba(115, 138, 150, 0.15);
+  
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(115, 138, 150, 0.15);
+}
+
+body.light-theme .btn-action:hover {
+  background: rgba(115, 138, 150, 0.08);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -123,7 +158,7 @@ body {
 
 .select-control {
   background: var(--bg-primary);
-  color: white;
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.5rem 1rem;

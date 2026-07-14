@@ -162,7 +162,7 @@ export const ProficiencyDashboard: React.FC<ProficiencyDashboardProps> = ({ onGe
               className="select-control"
               value={primaryRole}
               onChange={(e) => handleRoleChange(e.target.value)}
-              style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', background: '#090d16', color: '#f9fafb', border: '1px solid var(--border-color)' }}
+              style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
             >
               <option value="entry">Entry-Level Engineer</option>
               <option value="mid">Mid-Level Engineer</option>

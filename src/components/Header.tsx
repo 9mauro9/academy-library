@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, LogOut, User, Database, ShieldCheck } from 'lucide-react';
+import { BrainCircuit, LogOut, User, Database, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { logoutUser, isSandboxMode } from '../services/firebaseService';
 
 interface HeaderProps {
@@ -9,6 +9,24 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiveTab }) => {
+  const [theme, setTheme] = React.useState(() => {
+    const saved = localStorage.getItem('academy_builder_theme');
+    return saved || 'dark';
+  });
+
+  React.useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+    localStorage.setItem('academy_builder_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   const handleSignOut = async () => {
     await logoutUser();
     window.location.reload(); // Refresh auth listener
@@ -19,6 +37,15 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiv
   return (
     <header className="app-header">
       <div className="brand-section">
+        <button 
+          className="btn-action" 
+          id="themeToggleBtn"
+          onClick={toggleTheme} 
+          style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }} 
+          title="Toggle Light/Dark Theme"
+        >
+          {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+        </button>
         <div className="logo-container">
           <BrainCircuit size={22} />
         </div>
