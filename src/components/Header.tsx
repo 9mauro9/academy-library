@@ -23,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiv
           <BrainCircuit size={22} />
         </div>
         <div className="brand-title">
-          <h1>Academy Builder 1</h1>
+          <h1>Academy Builder</h1>
           <p>Personalized Learning Path Architect</p>
         </div>
       </div>
