@@ -20,7 +20,7 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, curren
           <Hourglass size={48} className="text-secondary spin-hourglass" style={{ color: 'var(--accent-color)' }} />
           <h3 style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Assembling Personalized Path...</h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '320px' }}>
-            Gemini is analyzing our topic catalog and organizing your optimized roadmap.
+            We are analyzing our topic catalog and organizing your optimized roadmap.
           </p>
         </div>
       </div>
