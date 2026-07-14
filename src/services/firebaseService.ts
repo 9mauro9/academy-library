@@ -330,9 +330,26 @@ const generateLocalPath = async (
 
     const catA = catalog.find((item: any) => item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim());
     const catB = catalog.find((item: any) => item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim());
-    const sortingA = catA ? (catA.sorting || 999) : 999;
-    const sortingB = catB ? (catB.sorting || 999) : 999;
-    if (sortingA !== sortingB) return sortingA - sortingB;
+    
+    const sortA = catA ? catA.sorting : null;
+    const sortB = catB ? catB.sorting : null;
+    if (sortA && sortB) {
+      const subTrackA = sortA.sub_track_number !== undefined ? sortA.sub_track_number : 999;
+      const subTrackB = sortB.sub_track_number !== undefined ? sortB.sub_track_number : 999;
+      if (subTrackA !== subTrackB) return subTrackA - subTrackB;
+
+      const lessonA = sortA.lesson_number !== undefined ? sortA.lesson_number : 999;
+      const lessonB = sortB.lesson_number !== undefined ? sortB.lesson_number : 999;
+      if (lessonA !== lessonB) return lessonA - lessonB;
+
+      const topicA_num = sortA.topic_number !== undefined ? sortA.topic_number : 999;
+      const topicB_num = sortB.topic_number !== undefined ? sortB.topic_number : 999;
+      if (topicA_num !== topicB_num) return topicA_num - topicB_num;
+
+      const subTopicA = sortA.sub_topic_number !== undefined ? sortA.sub_topic_number : 999;
+      const subTopicB = sortB.sub_topic_number !== undefined ? sortB.sub_topic_number : 999;
+      if (subTopicA !== subTopicB) return subTopicA - subTopicB;
+    }
 
     return (a.difficultyLevel || 5) - (b.difficultyLevel || 5);
   });
@@ -438,9 +455,26 @@ const generateLocalChatResponse = (
 
       const catA = catalog.find((item: any) => item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim());
       const catB = catalog.find((item: any) => item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim());
-      const sortingA = catA ? (catA.sorting || 999) : 999;
-      const sortingB = catB ? (catB.sorting || 999) : 999;
-      if (sortingA !== sortingB) return sortingA - sortingB;
+      
+      const sortA = catA ? catA.sorting : null;
+      const sortB = catB ? catB.sorting : null;
+      if (sortA && sortB) {
+        const subTrackA = sortA.sub_track_number !== undefined ? sortA.sub_track_number : 999;
+        const subTrackB = sortB.sub_track_number !== undefined ? sortB.sub_track_number : 999;
+        if (subTrackA !== subTrackB) return subTrackA - subTrackB;
+
+        const lessonA = sortA.lesson_number !== undefined ? sortA.lesson_number : 999;
+        const lessonB = sortB.lesson_number !== undefined ? sortB.lesson_number : 999;
+        if (lessonA !== lessonB) return lessonA - lessonB;
+
+        const topicA_num = sortA.topic_number !== undefined ? sortA.topic_number : 999;
+        const topicB_num = sortB.topic_number !== undefined ? sortB.topic_number : 999;
+        if (topicA_num !== topicB_num) return topicA_num - topicB_num;
+
+        const subTopicA = sortA.sub_topic_number !== undefined ? sortA.sub_topic_number : 999;
+        const subTopicB = sortB.sub_topic_number !== undefined ? sortB.sub_topic_number : 999;
+        if (subTopicA !== subTopicB) return subTopicA - subTopicB;
+      }
 
       return (a.difficultyLevel || 5) - (b.difficultyLevel || 5);
     });
