@@ -96,7 +96,11 @@ export const logoutUser = async () => {
 export const fetchTopics = async () => {
   if (isSandboxMode()) {
     const saved = localStorage.getItem('academy_builder_topics');
-    return saved ? JSON.parse(saved) : getMockCatalog();
+    const catalog = saved ? JSON.parse(saved) : getMockCatalog();
+    return catalog.map((item: any, index: number) => ({
+      ...item,
+      sorting: item.sorting !== undefined ? item.sorting : index
+    }));
   }
 
   const curriculumSnap = await getDocs(collection(db, 'curriculum_map'));
@@ -132,7 +136,9 @@ export const fetchTopics = async () => {
       skillTag: asset.attributes?.skill_tags?.[0] || cData.topic || "Core",
       difficultyLevel: asset.attributes?.difficulty_level || 5,
       learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`,
-      embedding: asset.embedding || null
+      embedding: asset.embedding || null,
+      sorting: cData.sorting || 999,
+      track_id: cData.track_id || ""
     });
   });
   return list;
@@ -308,13 +314,36 @@ const generateLocalPath = async (
   const hours = Math.floor(totalMins / 60);
   const mins = Math.round(totalMins % 60);
 
+  // Sort final modules list by track order, then lesson sequence index (sorting)
+  const getTrackWeight = (topicName: string) => {
+    const t = topicName.toLowerCase().trim();
+    if (t.includes("network foundation") || t.includes("foundation")) return 1;
+    if (t.includes("data center") || t.includes("dc") || t.includes("eos") || t.includes("vxlan")) return 2;
+    if (t.includes("campus")) return 3;
+    return 99;
+  };
+
+  const sortedModules = [...modules].sort((a: any, b: any) => {
+    const weightA = getTrackWeight(a.topic);
+    const weightB = getTrackWeight(b.topic);
+    if (weightA !== weightB) return weightA - weightB;
+
+    const catA = catalog.find((item: any) => item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim());
+    const catB = catalog.find((item: any) => item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim());
+    const sortingA = catA ? (catA.sorting || 999) : 999;
+    const sortingB = catB ? (catB.sorting || 999) : 999;
+    if (sortingA !== sortingB) return sortingA - sortingB;
+
+    return (a.difficultyLevel || 5) - (b.difficultyLevel || 5);
+  });
+
   return {
     learningPath: {
       title: `Path Recommendation: ${settings.speed.toUpperCase()} ${settings.duration}-Hour Track`,
       description: `Generated from active database topics. Personalized curriculum mapping your assessments.`,
       totalDuration: `${hours} hrs ${mins} mins`,
       sequenceStatus: "valid",
-      modules: modules
+      modules: sortedModules
     }
   };
 };
@@ -394,12 +423,34 @@ const generateLocalChatResponse = (
     const mins = Math.round(totalMins % 60);
 
     reply = `I have designed a custom learning path for you based on our catalog: "${modules[0]?.topic || 'Academy'} Foundations". It consists of ${modules.length} sequential modules. You can view it mapped on your workspace timeline.`;
+    const getTrackWeight = (topicName: string) => {
+      const t = topicName.toLowerCase().trim();
+      if (t.includes("network foundation") || t.includes("foundation")) return 1;
+      if (t.includes("data center") || t.includes("dc") || t.includes("eos") || t.includes("vxlan")) return 2;
+      if (t.includes("campus")) return 3;
+      return 99;
+    };
+
+    const sortedModules = [...modules].sort((a: any, b: any) => {
+      const weightA = getTrackWeight(a.topic);
+      const weightB = getTrackWeight(b.topic);
+      if (weightA !== weightB) return weightA - weightB;
+
+      const catA = catalog.find((item: any) => item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim());
+      const catB = catalog.find((item: any) => item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim());
+      const sortingA = catA ? (catA.sorting || 999) : 999;
+      const sortingB = catB ? (catB.sorting || 999) : 999;
+      if (sortingA !== sortingB) return sortingA - sortingB;
+
+      return (a.difficultyLevel || 5) - (b.difficultyLevel || 5);
+    });
+
     learningPath = {
-      title: `Custom AI Path: ${modules[0]?.topic || 'Academy'}`,
+      title: `Custom AI Path: ${sortedModules[0]?.topic || 'Academy'}`,
       description: `Path created via conversational request: "${message}"`,
       totalDuration: `${hours} hrs ${mins} mins`,
       sequenceStatus: "valid",
-      modules: modules
+      modules: sortedModules
     };
   } else if (text.includes("aws") || text.includes("cisco") || text.includes("azure") || text.includes("cloud")) {
     reply = `I am sorry, but I am the Academy Builder Learning Architect and I am constrained strictly to the Academy Builder topics catalog. We do not have modules matching "${message}" in our catalog. I recommend you look at our Network Foundations or Data Center Engineering courses.`;

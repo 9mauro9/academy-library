@@ -16,6 +16,56 @@ const getAIClient = () => {
   return new GoogleGenerativeAI(apiKey);
 };
 
+// Helper function to sort learning path modules by track order, then lesson sequence index (sorting)
+function sortPathModules(modules: any[], catalog: any[]) {
+  if (!Array.isArray(modules)) return modules;
+
+  const catalogMap = new Map<string, any>();
+  catalog.forEach(item => {
+    const key = `${item.topic.toLowerCase().trim()}-${item.lesson.toLowerCase().trim()}`;
+    catalogMap.set(key, item);
+  });
+
+  const getTrackWeight = (topic: string) => {
+    const t = topic.toLowerCase().trim();
+    if (t.includes("network foundation") || t.includes("foundation")) return 1;
+    if (t.includes("data center") || t.includes("dc") || t.includes("eos") || t.includes("vxlan")) return 2;
+    if (t.includes("campus")) return 3;
+    return 99;
+  };
+
+  return [...modules].sort((a, b) => {
+    const topicA = a.topic || "";
+    const topicB = b.topic || "";
+    
+    const keyA = `${topicA.toLowerCase().trim()}-${(a.lesson || "").toLowerCase().trim()}`;
+    const keyB = `${topicB.toLowerCase().trim()}-${(b.lesson || "").toLowerCase().trim()}`;
+    
+    const catA = catalogMap.get(keyA);
+    const catB = catalogMap.get(keyB);
+    
+    const officialTopicA = catA ? catA.topic : topicA;
+    const officialTopicB = catB ? catB.topic : topicB;
+    
+    const weightA = getTrackWeight(officialTopicA);
+    const weightB = getTrackWeight(officialTopicB);
+    
+    if (weightA !== weightB) {
+      return weightA - weightB;
+    }
+    
+    const sortIndexA = catA ? (catA.sorting || 999) : 999;
+    const sortIndexB = catB ? (catB.sorting || 999) : 999;
+    if (sortIndexA !== sortIndexB) {
+      return sortIndexA - sortIndexB;
+    }
+    
+    const diffA = a.difficultyLevel !== undefined ? a.difficultyLevel : (a.difficulty || 5);
+    const diffB = b.difficultyLevel !== undefined ? b.difficultyLevel : (b.difficulty || 5);
+    return diffA - diffB;
+  });
+}
+
 // Helper function to build the flat curriculum catalog by joining curriculum_map and assets
 async function fetchCatalogFromDB() {
   const curriculumSnapshot = await db.collection('curriculum_map').get();
@@ -51,7 +101,9 @@ async function fetchCatalogFromDB() {
       prerequisites: asset.attributes?.prerequisite && !asset.attributes.prerequisite.startsWith('=') ? asset.attributes.prerequisite : "",
       skillTag: asset.attributes?.skill_tags?.[0] || cData.topic || "Core",
       difficultyLevel: asset.attributes?.difficulty_level || 5,
-      learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`
+      learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`,
+      sorting: cData.sorting || 999,
+      track_id: cData.track_id || ""
     });
   });
 
@@ -222,6 +274,9 @@ ${JSON.stringify(catalog, null, 2)}
     const replyText = response.response.text() || '';
     const cleanJson = replyText.replace(/```json|```/g, '').trim();
     const learningPath = JSON.parse(cleanJson);
+    if (learningPath && Array.isArray(learningPath.modules)) {
+      learningPath.modules = sortPathModules(learningPath.modules, catalog);
+    }
 
     return { learningPath };
   } catch (err: any) {
@@ -297,7 +352,9 @@ export const chatWithArchitect = onCall(async (request) => {
             prerequisites: asset.attributes?.prerequisite && !asset.attributes.prerequisite.startsWith('=') ? asset.attributes.prerequisite : "",
             skillTag: asset.attributes?.skill_tags?.[0] || cData.topic || "Core",
             difficultyLevel: asset.attributes?.difficulty_level || 5,
-            learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`
+            learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`,
+            sorting: cData.sorting || 999,
+            track_id: cData.track_id || ""
           });
         });
       });
@@ -400,6 +457,9 @@ ${JSON.stringify(cleanContext, null, 2)}
     const replyText = response.response.text() || '';
     const cleanJson = replyText.replace(/```json|```/g, '').trim();
     const data = JSON.parse(cleanJson);
+    if (data && data.learningPath && Array.isArray(data.learningPath.modules)) {
+      data.learningPath.modules = sortPathModules(data.learningPath.modules, catalog);
+    }
 
     return data;
   } catch (err: any) {
