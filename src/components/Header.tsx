@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrainCircuit, LogOut, User, Database, ShieldCheck, Sun, Moon } from 'lucide-react';
-import { logoutUser, isSandboxMode } from '../services/firebaseService';
+import { BrainCircuit, User, Database, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { isSandboxMode } from '../services/firebaseService';
 
 interface HeaderProps {
   currentUser: any;
@@ -27,25 +27,11 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiv
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const handleSignOut = async () => {
-    await logoutUser();
-    window.location.reload(); // Refresh auth listener
-  };
-
   const sandbox = isSandboxMode();
 
   return (
     <header className="app-header">
       <div className="brand-section">
-        <button 
-          className="btn-action" 
-          id="themeToggleBtn"
-          onClick={toggleTheme} 
-          style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }} 
-          title="Toggle Light/Dark Theme"
-        >
-          {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-        </button>
         <div className="logo-container">
           <BrainCircuit size={22} />
         </div>
@@ -90,9 +76,14 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiv
               <span className="multiplier-label" style={{ marginRight: '0.75rem', textTransform: 'none' }}>
                 {currentUser.email || 'Guest Session'}
               </span>
-              <button className="btn-action" onClick={handleSignOut} title="Sign Out">
-                <LogOut size={14} />
-                <span>Sign Out</span>
+              <button 
+                className="btn-action" 
+                id="themeToggleBtn"
+                onClick={toggleTheme} 
+                style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }} 
+                title="Toggle Light/Dark Theme"
+              >
+                {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
               </button>
             </div>
           </>
