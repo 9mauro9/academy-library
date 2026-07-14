@@ -131,11 +131,13 @@ export const fetchTopics = async () => {
       asset_name: cData.asset_name || asset.name || "General Asset",
       duration: durationStr,
       durationMins: durationMins,
-      description: asset.attributes?.comments || `Lesson on ${cData.lesson} focusing on ${cData.topic}.`,
+      description: (asset.attributes?.skill_tags && asset.attributes.skill_tags.length > 0) ? asset.attributes.skill_tags.join(', ') : (cData.topic || "Core"),
       prerequisites: asset.attributes?.prerequisite && !asset.attributes.prerequisite.startsWith('=') ? asset.attributes.prerequisite : "",
       skillTag: asset.attributes?.skill_tags?.[0] || cData.topic || "Core",
       difficultyLevel: asset.attributes?.difficulty_level || 5,
       learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`,
+      curriculumTopic: cData.topic || "",
+      subTrack: cData.sub_track || "",
       embedding: asset.embedding || null,
       sorting: cData.sorting || 999,
       track_id: cData.track_id || ""
@@ -307,7 +309,10 @@ const generateLocalPath = async (
       difficultyLevel: c.difficultyLevel || 5,
       skillTag: c.skillTag || "Core",
       learningOutcome: c.learningOutcome || "Understand key concepts.",
-      prerequisites: c.prerequisites || ""
+      prerequisites: c.prerequisites || "",
+      curriculumTopic: c.curriculumTopic || "",
+      subTrack: c.subTrack || "",
+      asset_name: c.asset_name || ""
     };
   });
 
@@ -411,7 +416,10 @@ const generateLocalChatResponse = (
         difficultyLevel: c.difficultyLevel,
         skillTag: c.skillTag,
         learningOutcome: c.learningOutcome,
-        prerequisites: c.prerequisites
+        prerequisites: c.prerequisites,
+        curriculumTopic: c.curriculumTopic || "",
+        subTrack: c.subTrack || "",
+        asset_name: c.asset_name || ""
       });
     }
 
@@ -431,7 +439,10 @@ const generateLocalChatResponse = (
           difficultyLevel: c.difficultyLevel,
           skillTag: c.skillTag,
           learningOutcome: c.learningOutcome,
-          prerequisites: c.prerequisites
+          prerequisites: c.prerequisites,
+          curriculumTopic: c.curriculumTopic || "",
+          subTrack: c.subTrack || "",
+          asset_name: c.asset_name || ""
         });
       }
     }
@@ -536,226 +547,285 @@ export const sendChatMessage = async (
   return generateLocalChatResponse(message, history, catalog);
 };
 
-// Mock Catalog Data (cloned from original course Elements data structure)
 const getMockCatalog = () => [
   {
     topic: "Network Foundations",
-    lesson: "Introduction to Networks",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Introduction to Networks",
     duration: "35:03",
     durationMins: 35.05,
-    description: "Lesson on Network Engineering Fundamentals focusing on Network Introduction.",
+    description: "network definition",
     prerequisites: "",
     skillTag: "network definition",
     difficultyLevel: 1,
-    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Introduction",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Introduction to Network Models",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Introduction to Network Models",
     duration: "8:45",
     durationMins: 8.75,
-    description: "Voice a bit low",
+    description: "network models",
     prerequisites: "",
     skillTag: "network models",
     difficultyLevel: 1,
-    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Introduction",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "OSI in Action",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "OSI in Action",
     duration: "39:29",
     durationMins: 39.48,
-    description: "Voice a bit low",
+    description: "OSI",
     prerequisites: "",
     skillTag: "OSI",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Introduction",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Wireshark and TCP/IP",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Wireshark and TCP/IP",
     duration: "7:48",
     durationMins: 7.8,
-    description: "Voice a bit low",
+    description: "wireshark",
     prerequisites: "",
     skillTag: "wireshark",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Introduction and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Introduction",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Cabling and Connectivity - Part 1 - Copper and PoE",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Cabling and Connectivity - Part 1 - Copper and PoE",
     duration: "23:07",
     durationMins: 23.12,
-    description: "Voice a bit low",
+    description: "physical layer",
     prerequisites: "",
     skillTag: "physical layer",
     difficultyLevel: 1,
-    learningOutcome: "Master the concepts of Physical Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Physical Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Physical Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Cabling and Connectivity - Part 2 - Fiber and Wireless",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Cabling and Connectivity - Part 2 - Fiber and Wireless",
     duration: "22:02",
     durationMins: 22.03,
-    description: "Voice a bit low",
+    description: "fiber optics",
     prerequisites: "",
     skillTag: "fiber optics",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Physical Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Physical Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Physical Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Ethernet and MAC Address",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Ethernet and MAC Address",
     duration: "30:24",
     durationMins: 30.4,
-    description: "Voice a bit low",
+    description: "LAN",
     prerequisites: "",
     skillTag: "LAN",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Data Link Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Data Link Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Data Link Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "L2 Devices Learning and Forwarding",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "L2 Devices Learning and Forwarding",
     duration: "40:14",
     durationMins: 40.23,
-    description: "Lesson on Network Engineering Fundamentals focusing on Data Link Layer.",
+    description: "message types",
     prerequisites: "",
     skillTag: "message types",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Data Link Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Data Link Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Data Link Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Introduction to IPv4",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Introduction to IPv4",
     duration: "25:57",
     durationMins: 25.95,
-    description: "Voice a bit low",
+    description: "IPv4 address",
     prerequisites: "",
     skillTag: "IPv4 address",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "What is a Subnet Mask?",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "What is a Subnet Mask?",
     duration: "15:32",
     durationMins: 15.53,
-    description: "Voice a bit low",
+    description: "Network Part",
     prerequisites: "",
     skillTag: "Network Part",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "IPv4 Classes",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "IPv4 Classes",
     duration: "13:48",
     durationMins: 13.8,
-    description: "Voice a bit low",
+    description: "IPv4 Classes",
     prerequisites: "",
     skillTag: "IPv4 Classes",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Reserved IPv4 Addresses",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Reserved IPv4 Addresses",
     duration: "19:08",
     durationMins: 19.13,
-    description: "Voice a bit low",
+    description: "reserved ipv4",
     prerequisites: "",
     skillTag: "reserved ipv4",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Default Gateway",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Default Gateway",
     duration: "17:27",
     durationMins: 17.45,
-    description: "Voice a bit low",
+    description: "default gateway",
     prerequisites: "",
     skillTag: "default gateway",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Subnetting",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Subnetting",
     duration: "25:02",
     durationMins: 25.03,
-    description: "Voice a bit low",
+    description: "subnetting",
     prerequisites: "",
     skillTag: "subnetting",
     difficultyLevel: 4,
-    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Layer",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "DHCP",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "DHCP",
     duration: "21:29",
     durationMins: 21.48,
-    description: "Voice a bit low",
+    description: "dhcp",
     prerequisites: "",
     skillTag: "dhcp",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Protocols",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "ICMP",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "ICMP",
     duration: "15:00",
     durationMins: 15,
-    description: "Voice a bit low",
+    description: "icmp",
     prerequisites: "",
     skillTag: "icmp",
     difficultyLevel: 2,
-    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Protocols",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "DNS",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "DNS",
     duration: "12:02",
     durationMins: 12.03,
-    description: "Voice a bit low",
+    description: "dns",
     prerequisites: "",
     skillTag: "dns",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Protocols",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "ARP",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "ARP",
     duration: "22:32",
     durationMins: 22.53,
-    description: "Voice a bit low",
+    description: "arp",
     prerequisites: "",
     skillTag: "arp",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Protocols",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "NTP",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "NTP",
     duration: "12:03",
     durationMins: 12.05,
-    description: "Voice a bit low",
+    description: "ntp",
     prerequisites: "",
     skillTag: "ntp",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Network Protocols and Network Engineering Fundamentals.",
+    curriculumTopic: "Network Protocols",
+    subTrack: "Foundations"
   },
   {
     topic: "Network Foundations",
-    lesson: "Transport Layer Responsibilities",
+    lesson: "Network Engineering Fundamentals",
+    asset_name: "Transport Layer Responsibilities",
     duration: "23:10",
     durationMins: 23.17,
-    description: "Voice a bit low",
+    description: "transport layer",
     prerequisites: "",
     skillTag: "transport layer",
     difficultyLevel: 3,
-    learningOutcome: "Master the concepts of Transport and Application Layer and Network Engineering Fundamentals."
+    learningOutcome: "Master the concepts of Transport and Application Layer and Network Engineering Fundamentals.",
+    curriculumTopic: "Transport and Application Layer",
+    subTrack: "Foundations"
   }
 ];

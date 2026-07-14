@@ -1,17 +1,12 @@
 import React from 'react';
-import { saveLearningPath } from '../services/firebaseService';
-import { Clock, BookOpen, Layers, Save, Check, ShieldCheck, AlertCircle, Hourglass } from 'lucide-react';
+import { Clock, BookOpen, Layers, ShieldCheck, AlertCircle, Hourglass } from 'lucide-react';
 
 interface LearningPathViewProps {
   path: any;
-  currentUser: any;
-  onSaveSuccess?: () => void;
   loading?: boolean;
 }
 
-export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, currentUser, onSaveSuccess, loading }) => {
-  const [saving, setSaving] = React.useState(false);
-  const [saved, setSaved] = React.useState(false);
+export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, loading }) => {
 
   if (loading) {
     return (
@@ -38,22 +33,6 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, curren
       </div>
     );
   }
-
-  const handleSavePath = async () => {
-    if (!currentUser) return;
-    setSaving(true);
-    try {
-      await saveLearningPath(currentUser.uid, path);
-      setSaved(true);
-      if (onSaveSuccess) onSaveSuccess();
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      console.error("Error saving path:", err);
-      alert("Failed to save learning path to profile.");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
@@ -104,21 +83,6 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, curren
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{path.title || 'Personalized Learning Roadmap'}</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{path.description || 'Custom structured curriculum designed for your experience level.'}</p>
         </div>
-        {currentUser && (
-          <button 
-            className={`btn-action ${saved ? 'btn-success' : 'btn-primary'}`} 
-            onClick={handleSavePath}
-            disabled={saving || saved}
-            style={{
-              background: saved ? 'var(--break-bg)' : undefined,
-              borderColor: saved ? 'var(--break-border)' : undefined,
-              color: saved ? 'var(--break-text)' : undefined
-            }}
-          >
-            {saved ? <Check size={14} /> : <Save size={14} />}
-            <span>{saved ? 'Saved to Profile' : saving ? 'Saving...' : 'Save to Profile'}</span>
-          </button>
-        )}
       </div>
 
       {/* Timeline Roadmaps */}
@@ -148,13 +112,9 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, curren
               </div>
             </div>
 
-            <p className="timeline-desc">{mod.description}</p>
-
-            {mod.learningOutcome && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                <strong>Outcome:</strong> {mod.learningOutcome}
-              </div>
-            )}
+            <p className="timeline-desc" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+              {mod.topic || 'General'} / {mod.subTrack || 'Foundations'} / {mod.lesson || 'Lesson'} / {mod.curriculumTopic || 'Topic'} / {mod.asset_name || 'Sub Topic'}
+            </p>
 
             <div className="timeline-footer">
               <div>

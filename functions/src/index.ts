@@ -112,11 +112,13 @@ async function fetchCatalogFromDB() {
       asset_name: cData.asset_name || asset.name || "General Asset",
       duration: durationStr,
       durationMins: durationMins,
-      description: asset.attributes?.comments || `Lesson on ${cData.lesson} focusing on ${cData.topic}.`,
+      description: (asset.attributes?.skill_tags && asset.attributes.skill_tags.length > 0) ? asset.attributes.skill_tags.join(', ') : (cData.topic || "Core"),
       prerequisites: asset.attributes?.prerequisite && !asset.attributes.prerequisite.startsWith('=') ? asset.attributes.prerequisite : "",
       skillTag: asset.attributes?.skill_tags?.[0] || cData.topic || "Core",
       difficultyLevel: asset.attributes?.difficulty_level || 5,
       learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`,
+      curriculumTopic: cData.topic || "",
+      subTrack: cData.sub_track || "",
       sorting: cData.sorting || 999,
       track_id: cData.track_id || ""
     });
@@ -259,7 +261,10 @@ JSON Schema format:
       "difficultyLevel": 5,
       "skillTag": "Skill Tag",
       "learningOutcome": "Outcome",
-      "prerequisites": "Prereqs if any"
+      "prerequisites": "Prereqs if any",
+      "curriculumTopic": "Curriculum Topic",
+      "subTrack": "Sub Track",
+      "asset_name": "Sub Topic / Asset Name"
     }
   ]
 }`;
@@ -363,11 +368,13 @@ export const chatWithArchitect = onCall(async (request) => {
             asset_name: cData.asset_name || asset.name || "General Asset",
             duration: durationStr,
             durationMins: durationMins,
-            description: asset.attributes?.comments || `Lesson on ${cData.lesson} focusing on ${cData.topic}.`,
+            description: (asset.attributes?.skill_tags && asset.attributes.skill_tags.length > 0) ? asset.attributes.skill_tags.join(', ') : (cData.topic || "Core"),
             prerequisites: asset.attributes?.prerequisite && !asset.attributes.prerequisite.startsWith('=') ? asset.attributes.prerequisite : "",
             skillTag: asset.attributes?.skill_tags?.[0] || cData.topic || "Core",
             difficultyLevel: asset.attributes?.difficulty_level || 5,
             learningOutcome: `Master the concepts of ${cData.topic} and ${cData.lesson}.`,
+            curriculumTopic: cData.topic || "",
+            subTrack: cData.sub_track || "",
             sorting: cData.sorting || 999,
             track_id: cData.track_id || ""
           });
@@ -400,7 +407,10 @@ export const chatWithArchitect = onCall(async (request) => {
     prerequisites: t.prerequisites,
     skillTag: t.skillTag,
     difficultyLevel: t.difficultyLevel,
-    learningOutcome: t.learningOutcome
+    learningOutcome: t.learningOutcome,
+    curriculumTopic: t.curriculumTopic,
+    subTrack: t.subTrack,
+    asset_name: t.asset_name
   }));
 
   if (!ai) {
@@ -436,7 +446,10 @@ Learning Path Schema format for "learningPath":
       "difficultyLevel": 5,
       "skillTag": "Skill Tag",
       "learningOutcome": "Outcome",
-      "prerequisites": "Prereqs"
+      "prerequisites": "Prereqs",
+      "curriculumTopic": "Curriculum Topic",
+      "subTrack": "Sub Track",
+      "asset_name": "Sub Topic / Asset Name"
     }
   ]
 }
