@@ -4,9 +4,10 @@ import { Send, Bot } from 'lucide-react';
 
 interface AIArchitectPanelProps {
   onPathExtracted: (path: any) => void;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-export const AIArchitectPanel: React.FC<AIArchitectPanelProps> = ({ onPathExtracted }) => {
+export const AIArchitectPanel: React.FC<AIArchitectPanelProps> = ({ onPathExtracted, onLoadingChange }) => {
   const [messages, setMessages] = useState<any[]>([
     {
       role: 'assistant',
@@ -37,6 +38,7 @@ export const AIArchitectPanel: React.FC<AIArchitectPanelProps> = ({ onPathExtrac
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setLoading(true);
+    onLoadingChange?.(true);
 
     try {
       const data = await sendChatMessage(text, messages.slice(-10));
@@ -68,6 +70,7 @@ export const AIArchitectPanel: React.FC<AIArchitectPanelProps> = ({ onPathExtrac
       ]);
     } finally {
       setLoading(false);
+      onLoadingChange?.(false);
     }
   };
 

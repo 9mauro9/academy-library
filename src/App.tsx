@@ -140,6 +140,7 @@ function App() {
                 <LearningPathView 
                   path={activePath} 
                   currentUser={currentUser} 
+                  loading={loadingPath}
                 />
               </div>
 
@@ -151,7 +152,10 @@ function App() {
                   overflow: 'hidden' 
                 }}
               >
-                <AIArchitectPanel onPathExtracted={(path) => setActivePath(path)} />
+                <AIArchitectPanel 
+                  onPathExtracted={(path) => setActivePath(path)} 
+                  onLoadingChange={setLoadingPath}
+                />
               </div>
             </>
           )}

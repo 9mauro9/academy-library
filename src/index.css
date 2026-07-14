@@ -808,3 +808,14 @@ body {
 .topics-table tr:hover {
   background: rgba(255, 255, 255, 0.02);
 }
+
+/* Spinning animation for hourglass loader */
+@keyframes spin-hourglass {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spin-hourglass {
+  animation: spin-hourglass 2s infinite ease-in-out;
+}

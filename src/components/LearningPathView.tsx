@@ -1,16 +1,31 @@
 import React from 'react';
 import { saveLearningPath } from '../services/firebaseService';
-import { Clock, BookOpen, Layers, Save, Check, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Clock, BookOpen, Layers, Save, Check, ShieldCheck, AlertCircle, Hourglass } from 'lucide-react';
 
 interface LearningPathViewProps {
   path: any;
   currentUser: any;
   onSaveSuccess?: () => void;
+  loading?: boolean;
 }
 
-export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, currentUser, onSaveSuccess }) => {
+export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, currentUser, onSaveSuccess, loading }) => {
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', padding: '2rem', textAlign: 'center', background: 'var(--bg-primary)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <Hourglass size={48} className="text-secondary spin-hourglass" style={{ color: 'var(--accent-color)' }} />
+          <h3 style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Assembling Personalized Path...</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '320px' }}>
+            Gemini is analyzing our topic catalog and organizing your optimized roadmap.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!path || !path.modules || path.modules.length === 0) {
     return (
