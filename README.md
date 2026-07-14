@@ -1,45 +1,32 @@
-# Academy Library Core
+# React + TypeScript + Vite
 
-API-first CMS that treats "Assets" as unique, immutable nodes and "Tracks" as orchestrated curriculum paths in Firestore.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Getting Started
+Currently, two official plugins are available:
 
-### 1. Installation
-Install NPM dependencies in the project root:
-```bash
-npm install
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
 ```
 
-### 2. Ingest Data (ETL)
-Run the extraction and upload pipeline. This parses the Excel files, validates that all asset references are valid, and batch-uploads the records to Firestore.
-```bash
-npm run ingest
-```
-
-### 3. Run REST API
-Start the secure Express REST API server (listening on port `8080`):
-```bash
-npm run api
-```
-
-### 4. Run Triggers Simulator
-Start the local Firestore triggers simulator. This monitors updates to `assets` and `curriculum_map` and writes invalidation tokens to `cache_invalidations`:
-```bash
-npm run simulator
-```
-
-### 5. Run Integration Verification
-To test the REST API, client SDK caching, and event-driven cache invalidation end-to-end, start the REST API and Triggers Simulator in background terminals, then run:
-```bash
-npm run verify
-```
-
-## Architecture Details
-
-- **Firestore collections**:
-  - `assets`: Normalised asset documents indexed by a slugified version of their names (e.g. `introduction-to-networks`).
-  - `curriculum_map`: Curriculum nodes (`track`, `sub_track`, `lesson`, `topic`) pointing to assets via Firestore `DocumentReference` fields (`asset_ref`).
-  - `cache_invalidations`: Realtime cache invalidation events.
-- **REST API**: Standardizes retrieval via `GET /content?track_id=XXX&version=latest` and maps resolved assets in a nested JSON structure.
-- **SDK**: A client-side wrapper module with built-in in-memory caching and real-time subscription capabilities to invalidate the cache when updates occur.
-- **Triggers**: Firestore `onUpdate` triggers written in `functions/index.js` for production deployment.
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.

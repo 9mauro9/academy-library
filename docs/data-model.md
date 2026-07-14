@@ -1,6 +1,6 @@
 # Structural Data Model
 
-This document serves as the single source of truth for the Academy Library data schema.
+This document serves as the single source of truth for the Academy Builder database schema (powered by the Academy Library core database).
 
 ---
 

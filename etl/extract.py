@@ -59,7 +59,7 @@ def parse_tags(val):
     return [tag.strip() for tag in val_str.split(',') if tag.strip()]
 
 def main():
-    workspace_dir = "/Users/maurolollo/Desktop/Academy Library"
+    workspace_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     cms_path = os.path.join(workspace_dir, "Academy CMS Master 1.xlsx")
     track_path = os.path.join(workspace_dir, "Academy Track Master 1.xlsx")
     

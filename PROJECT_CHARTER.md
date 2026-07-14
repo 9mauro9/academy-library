@@ -1,7 +1,7 @@
-# Project Charter: Academy Library
+# Project Charter: Academy Builder
 
 ## 1. Problem Statement
-The Academy Library serves as the unified Content Management System (CMS) for the Academy curriculum. Previously, course assets and curriculum hierarchy were tightly coupled, leading to duplicate content, broken links, and manual overhead when managing curriculum updates. 
+The Academy Builder serves as the unified Content Management System (CMS) and learning path recommendation engine for the Academy curriculum. Previously, course assets and curriculum hierarchy were tightly coupled, leading to duplicate content, broken links, and manual overhead when managing curriculum updates. 
 
 This project normalizes the schema by separating **Assets** (immutable content nodes) from the **Curriculum Structure** (orchestrated learning paths). It provides a secure, high-performance REST API with database versioning, rollbacks, and AI-powered spreadsheet ingestion.
 

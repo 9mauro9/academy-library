@@ -1,6 +1,6 @@
-# Architecture Blueprint: Academy Library
+# Architecture Blueprint: Academy Builder
 
-This document outlines the visual system architecture, processing flows, and caching strategies.
+This document outlines the visual system architecture, processing flows, caching strategies, and recommendation engines for the Academy Builder application.
 
 ---
 

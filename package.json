@@ -1,25 +1,39 @@
 {
-  "name": "academy-library",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "academy-timeliner",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
     "extract": "python3 etl/extract.py",
-    "load": "NODE_PATH=./node_modules node etl/load.js",
+    "load": "NODE_PATH=./node_modules node etl/load.cjs",
     "ingest": "npm run extract && npm run load",
-    "api": "NODE_PATH=./node_modules node api/server.js",
-    "simulator": "NODE_PATH=./node_modules node etl/simulate_triggers.js",
-    "verify": "NODE_PATH=./node_modules node test/verify.js",
-    "verify-frontend": "NODE_PATH=./node_modules node test/verify_frontend_api.js",
-    "verify-versioning": "NODE_PATH=./node_modules node test/verify_versioning.js"
+    "api": "NODE_PATH=./node_modules node api/server.cjs",
+    "simulator": "NODE_PATH=./node_modules node etl/simulate_triggers.cjs",
+    "verify": "NODE_PATH=./node_modules node test/verify.cjs",
+    "verify-frontend": "NODE_PATH=./node_modules node test/verify_frontend_api.cjs",
+    "verify-versioning": "NODE_PATH=./node_modules node test/verify_versioning.cjs",
+    "sync-docs": "NODE_PATH=./node_modules node scripts/sync-docs.cjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1",
+    "firebase": "^12.15.0",
     "firebase-admin": "^14.1.0",
-    "multer": "^2.2.0"
+    "lucide-react": "^1.23.0",
+    "multer": "^2.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
   }
 }
