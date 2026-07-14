@@ -55,7 +55,7 @@ export const AIArchitectPanel: React.FC<AIArchitectPanelProps> = ({ onPathExtrac
           ...prev, 
           {
             role: 'system',
-            content: `✨ Roadmap Updated: "${data.learningPath.title}" has been generated. Switch to the 'Diagnostic Dashboard' tab or view the timeline.`
+            content: `✨ Roadmap Updated: "${data.learningPath.title}" has been generated. Switch to the 'Manual Path' tab or view the timeline.`
           }
         ]);
       }

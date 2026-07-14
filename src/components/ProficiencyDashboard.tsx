@@ -145,7 +145,7 @@ export const ProficiencyDashboard: React.FC<ProficiencyDashboardProps> = ({ onGe
       <div className="sidebar-header">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Gauge size={18} className="text-secondary" />
-          <span>Diagnostic Dashboard</span>
+          <span>Manual Path</span>
         </h2>
       </div>
 

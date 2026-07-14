@@ -36,13 +36,13 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiv
                 className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
                 onClick={() => setActiveTab('dashboard')}
               >
-                Diagnostic Dashboard
+                Manual Path
               </button>
               <button 
                 className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
                 onClick={() => setActiveTab('chat')}
               >
-                AI Architect Panel
+                AI Path
               </button>
             </div>
 

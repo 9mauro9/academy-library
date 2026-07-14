@@ -100,7 +100,7 @@ function App() {
       <Header currentUser={currentUser} activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className="main-layout">
-        {/* Left Sidebar (Only visible in Diagnostic Dashboard mode) */}
+        {/* Left Sidebar (Only visible in Manual Path mode) */}
         {activeTab === 'dashboard' && currentUser && (
           <>
             <div style={{ width: `${sidebarWidth}px`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
