@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 admin.initializeApp();
@@ -22,7 +21,7 @@ function sortPathModules(modules: any[], catalog: any[]) {
 
   const catalogMap = new Map<string, any>();
   catalog.forEach(item => {
-    const key = `${item.topic.toLowerCase().trim()}-${item.lesson.toLowerCase().trim()}`;
+    const key = `${item.topic.toLowerCase().trim()}-${item.lesson.toLowerCase().trim()}-${(item.asset_name || "").toLowerCase().trim()}`;
     catalogMap.set(key, item);
   });
 
@@ -38,8 +37,8 @@ function sortPathModules(modules: any[], catalog: any[]) {
     const topicA = a.topic || "";
     const topicB = b.topic || "";
     
-    const keyA = `${topicA.toLowerCase().trim()}-${(a.lesson || "").toLowerCase().trim()}`;
-    const keyB = `${topicB.toLowerCase().trim()}-${(b.lesson || "").toLowerCase().trim()}`;
+    const keyA = `${topicA.toLowerCase().trim()}-${(a.lesson || "").toLowerCase().trim()}-${(a.asset_name || "").toLowerCase().trim()}`;
+    const keyB = `${topicB.toLowerCase().trim()}-${(b.lesson || "").toLowerCase().trim()}-${(b.asset_name || "").toLowerCase().trim()}`;
     
     const catA = catalogMap.get(keyA);
     const catB = catalogMap.get(keyB);
@@ -47,17 +46,22 @@ function sortPathModules(modules: any[], catalog: any[]) {
     const officialTopicA = catA ? catA.topic : topicA;
     const officialTopicB = catB ? catB.topic : topicB;
     
-    const weightA = getTrackWeight(officialTopicA);
-    const weightB = getTrackWeight(officialTopicB);
-    
-    if (weightA !== weightB) {
-      return weightA - weightB;
-    }
-    
     const sortA = catA ? catA.sorting : null;
     const sortB = catB ? catB.sorting : null;
     
-    if (sortA && sortB) {
+    if (sortA !== null && sortA !== undefined && sortB !== null && sortB !== undefined) {
+      if (typeof sortA === 'number' && typeof sortB === 'number') {
+        return sortA - sortB;
+      }
+
+      const trackA = sortA.track_number !== undefined ? sortA.track_number : 999;
+      const trackB = sortB.track_number !== undefined ? sortB.track_number : 999;
+      if (trackA !== trackB) return trackA - trackB;
+
+      const weightA = getTrackWeight(officialTopicA);
+      const weightB = getTrackWeight(officialTopicB);
+      if (weightA !== weightB) return weightA - weightB;
+
       const subTrackA = sortA.sub_track_number !== undefined ? sortA.sub_track_number : 999;
       const subTrackB = sortB.sub_track_number !== undefined ? sortB.sub_track_number : 999;
       if (subTrackA !== subTrackB) return subTrackA - subTrackB;
@@ -73,6 +77,12 @@ function sortPathModules(modules: any[], catalog: any[]) {
       const subTopicA = sortA.sub_topic_number !== undefined ? sortA.sub_topic_number : 999;
       const subTopicB = sortB.sub_topic_number !== undefined ? sortB.sub_topic_number : 999;
       if (subTopicA !== subTopicB) return subTopicA - subTopicB;
+    }
+
+    const weightA = getTrackWeight(officialTopicA);
+    const weightB = getTrackWeight(officialTopicB);
+    if (weightA !== weightB) {
+      return weightA - weightB;
     }
     
     const diffA = a.difficultyLevel !== undefined ? a.difficultyLevel : (a.difficulty || 5);
@@ -128,8 +138,8 @@ async function fetchCatalogFromDB() {
 }
 
 // Background trigger: Generate embeddings when an asset is created or updated
-export const onAssetWrite = onDocumentWritten('assets/{assetId}', async (event) => {
-  const data = event.data?.after.data();
+export const onAssetWrite = functions.runWith({ secrets: ["GEMINI_API_KEY"] }).firestore.document('assets/{assetId}').onWrite(async (change, context) => {
+  const data = change.after.data();
   if (!data) return;
 
   // Avoid infinite loops
@@ -160,7 +170,7 @@ export const onAssetWrite = onDocumentWritten('assets/{assetId}', async (event) 
   }
 
   if (vector.length > 0) {
-    await event.data?.after.ref.update({
+    await change.after.ref.update({
       embedding: vector,
       embeddingVersion: 'v1'
     });
@@ -168,7 +178,7 @@ export const onAssetWrite = onDocumentWritten('assets/{assetId}', async (event) 
 });
 
 // Admin Callable: Process/Generate missing embeddings on demand for assets
-export const processEmbeddings = onCall(async (request) => {
+export const processEmbeddings = functions.runWith({ secrets: ["GEMINI_API_KEY"] }).https.onCall(async (data, context) => {
   const ai = getAIClient();
   const assetsSnapshot = await db.collection('assets').get();
   let updatedCount = 0;
@@ -207,22 +217,22 @@ export const processEmbeddings = onCall(async (request) => {
 });
 
 // Callable: Generate Learning Path from Diagnostic Assessment Sliders
-export const generatePathFromDiagnostic = onCall(async (request) => {
-  const { scores, maxDuration, learningDepth } = request.data as {
+export const generatePathFromDiagnostic = functions.runWith({ secrets: ["GEMINI_API_KEY"] }).https.onCall(async (data, context) => {
+  const { scores, maxDuration, learningDepth } = (data || {}) as {
     scores: Record<string, number>;
     maxDuration: number;
     learningDepth: string;
   };
 
   if (!scores) {
-    throw new HttpsError('invalid-argument', 'Proficiency scores are required.');
+    throw new functions.https.HttpsError('invalid-argument', 'Proficiency scores are required.');
   }
 
   // Retrieve course catalog from Firestore by joining curriculum_map and assets
   const catalog = await fetchCatalogFromDB();
 
   if (catalog.length === 0) {
-    throw new HttpsError('failed-precondition', 'The topics catalog is empty. Load courses first.');
+    throw new functions.https.HttpsError('failed-precondition', 'The topics catalog is empty. Load courses first.');
   }
 
   const ai = getAIClient();
@@ -301,19 +311,19 @@ ${JSON.stringify(catalog, null, 2)}
     return { learningPath };
   } catch (err: any) {
     console.error("Gemini Generation Error:", err);
-    throw new HttpsError('internal', `Failed to generate recommendations: ${err.message}`);
+    throw new functions.https.HttpsError('internal', `Failed to generate recommendations: ${err.message}`);
   }
 });
 
 // Callable: RAG-based AI Architect Chat Panel
-export const chatWithArchitect = onCall(async (request) => {
-  const { message, history } = request.data as {
+export const chatWithArchitect = functions.runWith({ secrets: ["GEMINI_API_KEY"] }).https.onCall(async (data, context) => {
+  const { message, history } = (data || {}) as {
     message: string;
     history: Array<{ role: string; content: string }>;
   };
 
   if (!message) {
-    throw new HttpsError('invalid-argument', 'Message content is required.');
+    throw new functions.https.HttpsError('invalid-argument', 'Message content is required.');
   }
 
   const ai = getAIClient();
@@ -414,9 +424,59 @@ export const chatWithArchitect = onCall(async (request) => {
   }));
 
   if (!ai) {
+    const text = message.toLowerCase();
+    let selected = retrievedTopics;
+    if (text.includes("data center") || text.includes("dc") || text.includes("eos") || text.includes("vxlan") || text.includes("evpn") || text.includes("irb") || text.includes("cvp") || text.includes("cloudvision") || text.includes("arista") || text.includes("cli") || text.includes("ccie")) {
+      selected = retrievedTopics.filter(c => c.topic === "Data Center" || c.topic.toLowerCase().includes("data center") || c.topic.toLowerCase().includes("eos") || c.topic.toLowerCase().includes("vxlan") || c.topic.toLowerCase().includes("evpn") || c.topic.toLowerCase().includes("irb") || c.topic.toLowerCase().includes("cvp") || c.topic.toLowerCase().includes("cloudvision") || c.topic.toLowerCase().includes("arista") || c.topic.toLowerCase().includes("cli") || c.topic.toLowerCase().includes("ccie"));
+    } else if (text.includes("foundation") || text.includes("network") || text.includes("osi") || text.includes("subnet")) {
+      selected = retrievedTopics.filter(c => c.topic === "Network Foundations" || c.topic.toLowerCase().includes("network") || c.topic.toLowerCase().includes("foundations") || c.topic.toLowerCase().includes("osi") || c.topic.toLowerCase().includes("subnet"));
+    } else if (text.includes("campus")) {
+      selected = retrievedTopics.filter(c => c.topic === "Campus" || c.topic.toLowerCase().includes("campus"));
+    }
+
+    let targetHours = 8;
+    const dayMatch = text.match(/(\d+)\s*day/);
+    const hourMatch = text.match(/(\d+)\s*hour/);
+    if (dayMatch) {
+      targetHours = parseInt(dayMatch[1], 10) * 6;
+    } else if (hourMatch) {
+      targetHours = parseInt(hourMatch[1], 10);
+    }
+
+    const sorted = [...selected].sort((a, b) => (a.difficultyLevel || 5) - (b.difficultyLevel || 5));
+    let totalMins = 0;
+    const modules: any[] = [];
+    for (const c of sorted) {
+      if (totalMins >= targetHours * 60) break;
+      totalMins += c.durationMins || 20;
+      modules.push({
+        topic: c.topic,
+        lesson: c.lesson,
+        duration: c.duration || "20:00",
+        description: c.description || "",
+        difficultyLevel: c.difficultyLevel,
+        skillTag: c.skillTag,
+        learningOutcome: c.learningOutcome,
+        prerequisites: c.prerequisites,
+        curriculumTopic: c.curriculumTopic || "",
+        subTrack: c.subTrack || "",
+        asset_name: c.asset_name || ""
+      });
+    }
+
+    const sortedModules = sortPathModules(modules, catalog);
+    const hours = Math.floor(totalMins / 60);
+    const mins = Math.round(totalMins % 60);
+
     return {
-      reply: `[MOCK MODE] You asked: "${message}". Connect a valid GEMINI_API_KEY to see real AI responses. Here is a matching topic from our catalog: "${cleanContext[0]?.lesson || 'No topics available'}"`,
-      learningPath: null
+      reply: `[MOCK MODE] I have compiled a custom learning path from our official topics catalog matching your request: "${message}". Connect a valid GEMINI_API_KEY to see real AI responses.`,
+      learningPath: {
+        title: `Mock AI Path: ${sortedModules[0]?.topic || 'Academy'}`,
+        description: `Path created via conversational request (Mock Mode): "${message}"`,
+        totalDuration: `${hours} hrs ${mins} mins`,
+        sequenceStatus: "valid",
+        modules: sortedModules
+      }
     };
   }
 
@@ -492,6 +552,6 @@ ${JSON.stringify(cleanContext, null, 2)}
     return data;
   } catch (err: any) {
     console.error("Gemini Chat Error:", err);
-    throw new HttpsError('internal', `Failed to generate reply: ${err.message}`);
+    throw new functions.https.HttpsError('internal', `Failed to generate reply: ${err.message}`);
   }
 });

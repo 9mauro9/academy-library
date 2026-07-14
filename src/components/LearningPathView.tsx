@@ -95,9 +95,8 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({ path, loadin
                   <span className="fit-badge ok" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
                     Step {index + 1}
                   </span>
-                  <span className="timeline-subtitle">{mod.topic}</span>
+                  <span className="timeline-subtitle">{mod.asset_name || mod.topic}</span>
                 </div>
-                <h3>{mod.lesson}</h3>
               </div>
               <div className="badge-row">
                 <span className="fit-badge ok">{mod.duration}</span>

@@ -26,6 +26,8 @@ Contains the normalized, unique, and versioned asset metadata documents.
 | `last_updated` | **String** | Date of last update (`YYYY-MM-DD`). |
 | `comments` | **String** | Notes from content administrators. |
 | `topic` | **String** | Associated curriculum topic. |
+| `url` | **String** | Token-secured Firebase Storage download URL for file-based assets (e.g. PDFs). |
+| `gcs_uri` | **String** | The Google Cloud Storage URI pointing to the file backend in the storage bucket. |
 
 ---
 

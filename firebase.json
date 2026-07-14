@@ -20,6 +20,7 @@
     }
   ],
   "hosting": {
+    "site": "academy-timeliner",
     "public": "dist",
     "ignore": [
       "firebase.json",

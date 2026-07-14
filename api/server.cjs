@@ -40,6 +40,7 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
+db.settings({ ignoreUndefinedProperties: true });
 
 // In-Memory Cache for Assets and Curriculum Map
 class MemoryCache {

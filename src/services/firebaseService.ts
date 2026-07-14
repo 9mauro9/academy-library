@@ -329,16 +329,30 @@ const generateLocalPath = async (
   };
 
   const sortedModules = [...modules].sort((a: any, b: any) => {
-    const weightA = getTrackWeight(a.topic);
-    const weightB = getTrackWeight(b.topic);
-    if (weightA !== weightB) return weightA - weightB;
-
-    const catA = catalog.find((item: any) => item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim());
-    const catB = catalog.find((item: any) => item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim());
+    const catA = catalog.find((item: any) => 
+      item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim() &&
+      (item.asset_name || "").toLowerCase().trim() === (a.asset_name || "").toLowerCase().trim()
+    );
+    const catB = catalog.find((item: any) => 
+      item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim() &&
+      (item.asset_name || "").toLowerCase().trim() === (b.asset_name || "").toLowerCase().trim()
+    );
     
     const sortA = catA ? catA.sorting : null;
     const sortB = catB ? catB.sorting : null;
-    if (sortA && sortB) {
+    if (sortA !== null && sortA !== undefined && sortB !== null && sortB !== undefined) {
+      if (typeof sortA === 'number' && typeof sortB === 'number') {
+        return sortA - sortB;
+      }
+
+      const trackA = sortA.track_number !== undefined ? sortA.track_number : 999;
+      const trackB = sortB.track_number !== undefined ? sortB.track_number : 999;
+      if (trackA !== trackB) return trackA - trackB;
+
+      const weightA = getTrackWeight(a.topic);
+      const weightB = getTrackWeight(b.topic);
+      if (weightA !== weightB) return weightA - weightB;
+
       const subTrackA = sortA.sub_track_number !== undefined ? sortA.sub_track_number : 999;
       const subTrackB = sortB.sub_track_number !== undefined ? sortB.sub_track_number : 999;
       if (subTrackA !== subTrackB) return subTrackA - subTrackB;
@@ -355,6 +369,10 @@ const generateLocalPath = async (
       const subTopicB = sortB.sub_topic_number !== undefined ? sortB.sub_topic_number : 999;
       if (subTopicA !== subTopicB) return subTopicA - subTopicB;
     }
+
+    const weightA = getTrackWeight(a.topic);
+    const weightB = getTrackWeight(b.topic);
+    if (weightA !== weightB) return weightA - weightB;
 
     return (a.difficultyLevel || 5) - (b.difficultyLevel || 5);
   });
@@ -380,12 +398,44 @@ const generateLocalChatResponse = (
   let reply = "";
   let learningPath: any = null;
 
-  if (text.includes("path") || text.includes("track") || text.includes("generate") || text.includes("design")) {
+  const isPathRequest = 
+    text.includes("path") || 
+    text.includes("track") || 
+    text.includes("generate") || 
+    text.includes("design") ||
+    text.includes("build") || 
+    text.includes("create") || 
+    text.includes("make") || 
+    text.includes("compile") ||
+    text.includes("guide") || 
+    text.includes("course") || 
+    text.includes("curriculum") || 
+    text.includes("timeline") || 
+    text.includes("roadmap") || 
+    text.includes("syllabus") || 
+    text.includes("program") ||
+    text.includes("vxlan") || 
+    text.includes("evpn") || 
+    text.includes("bgp") || 
+    text.includes("cabling") || 
+    text.includes("data center") || 
+    text.includes("dc") || 
+    text.includes("campus") || 
+    text.includes("network") || 
+    text.includes("foundation") || 
+    text.includes("osi") || 
+    text.includes("subnet") || 
+    text.includes("learn") || 
+    text.includes("study") || 
+    text.includes("prerequisite") ||
+    text.includes("irb");
+
+  if (isPathRequest) {
     let selected = catalog;
-    if (text.includes("data center") || text.includes("dc") || text.includes("eos") || text.includes("vxlan")) {
-      selected = catalog.filter(c => c.topic === "Data Center" || c.topic.toLowerCase().includes("data center") || c.topic.toLowerCase().includes("eos") || c.topic.toLowerCase().includes("vxlan"));
-    } else if (text.includes("foundation") || text.includes("network") || text.includes("osi") || text.includes("subnet")) {
-      selected = catalog.filter(c => c.topic === "Network Foundations" || c.topic.toLowerCase().includes("network") || c.topic.toLowerCase().includes("foundations") || c.topic.toLowerCase().includes("osi") || c.topic.toLowerCase().includes("subnet"));
+    if (text.includes("data center") || text.includes("dc") || text.includes("eos") || text.includes("vxlan") || text.includes("evpn") || text.includes("irb") || text.includes("cvp") || text.includes("cloudvision") || text.includes("arista") || text.includes("cli") || text.includes("ccie")) {
+      selected = catalog.filter(c => c.topic === "Data Center" || c.topic.toLowerCase().includes("data center") || c.topic.toLowerCase().includes("eos") || c.topic.toLowerCase().includes("vxlan") || c.topic.toLowerCase().includes("evpn") || c.topic.toLowerCase().includes("irb") || c.topic.toLowerCase().includes("cvp") || c.topic.toLowerCase().includes("cloudvision") || c.topic.toLowerCase().includes("arista") || c.topic.toLowerCase().includes("cli") || c.topic.toLowerCase().includes("ccie"));
+    } else if (text.includes("foundation") || text.includes("network") || text.includes("osi") || text.includes("subnet") || text.includes("cabling")) {
+      selected = catalog.filter(c => c.topic === "Network Foundations" || c.topic.toLowerCase().includes("network") || c.topic.toLowerCase().includes("foundations") || c.topic.toLowerCase().includes("osi") || c.topic.toLowerCase().includes("subnet") || c.topic.toLowerCase().includes("cabling"));
     } else if (text.includes("campus")) {
       selected = catalog.filter(c => c.topic === "Campus" || c.topic.toLowerCase().includes("campus"));
     }
@@ -460,16 +510,30 @@ const generateLocalChatResponse = (
     };
 
     const sortedModules = [...modules].sort((a: any, b: any) => {
-      const weightA = getTrackWeight(a.topic);
-      const weightB = getTrackWeight(b.topic);
-      if (weightA !== weightB) return weightA - weightB;
-
-      const catA = catalog.find((item: any) => item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim());
-      const catB = catalog.find((item: any) => item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim());
+      const catA = catalog.find((item: any) => 
+        item.lesson.toLowerCase().trim() === a.lesson.toLowerCase().trim() &&
+        (item.asset_name || "").toLowerCase().trim() === (a.asset_name || "").toLowerCase().trim()
+      );
+      const catB = catalog.find((item: any) => 
+        item.lesson.toLowerCase().trim() === b.lesson.toLowerCase().trim() &&
+        (item.asset_name || "").toLowerCase().trim() === (b.asset_name || "").toLowerCase().trim()
+      );
       
       const sortA = catA ? catA.sorting : null;
       const sortB = catB ? catB.sorting : null;
-      if (sortA && sortB) {
+      if (sortA !== null && sortA !== undefined && sortB !== null && sortB !== undefined) {
+        if (typeof sortA === 'number' && typeof sortB === 'number') {
+          return sortA - sortB;
+        }
+
+        const trackA = sortA.track_number !== undefined ? sortA.track_number : 999;
+        const trackB = sortB.track_number !== undefined ? sortB.track_number : 999;
+        if (trackA !== trackB) return trackA - trackB;
+
+        const weightA = getTrackWeight(a.topic);
+        const weightB = getTrackWeight(b.topic);
+        if (weightA !== weightB) return weightA - weightB;
+
         const subTrackA = sortA.sub_track_number !== undefined ? sortA.sub_track_number : 999;
         const subTrackB = sortB.sub_track_number !== undefined ? sortB.sub_track_number : 999;
         if (subTrackA !== subTrackB) return subTrackA - subTrackB;
@@ -486,6 +550,10 @@ const generateLocalChatResponse = (
         const subTopicB = sortB.sub_topic_number !== undefined ? sortB.sub_topic_number : 999;
         if (subTopicA !== subTopicB) return subTopicA - subTopicB;
       }
+
+      const weightA = getTrackWeight(a.topic);
+      const weightB = getTrackWeight(b.topic);
+      if (weightA !== weightB) return weightA - weightB;
 
       return (a.difficultyLevel || 5) - (b.difficultyLevel || 5);
     });
