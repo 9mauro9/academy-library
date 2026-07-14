@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academy Library CMS Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header" style="gap: 12px; align-items: center; display: flex; margin-bottom: 32px; padding-left: 4px;">
+        <div class="logo-container" style="width: 38px; height: 38px; background: var(--grad-cyan-blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; box-shadow: 0 0 10px rgba(99, 102, 241, 0.3); flex-shrink: 0;">▲</div>
+        <div>
+          <h1 style="font-size: 0.95rem; font-weight: 700; margin: 0; line-height: 1.2; letter-spacing: -0.02em;">Academy Library</h1>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">CMS Core Portal</p>
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-tab="dashboard">
+          <span class="icon">📊</span> Dashboard
+        </button>
+        <button class="nav-btn" data-tab="ingestion">
+          <span class="icon">📥</span> Data Ingestion
+        </button>
+        <button class="nav-btn" data-tab="tracks">
+          <span class="icon">🌿</span> Tracks Browser
+        </button>
+        <button class="nav-btn" data-tab="assets">
+          <span class="icon">🎬</span> Asset Manager
+        </button>
+        <button class="nav-btn" data-tab="logs">
+          <span class="icon">🔔</span> Invalidation Logs
+        </button>
+        <button class="nav-btn" data-tab="history">
+          <span class="icon">📜</span> History & Undo
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="status-indicator online"></div>
+        <div class="status-text">Connected: academy-live-builder</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- DASHBOARD TAB -->
+      <section id="dashboard" class="content-tab active">
+        <div class="tab-header">
+          <h1>System Overview</h1>
+          <p>Real-time telemetry and management controls for the Academy Library database.</p>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-title">Total Assets Ingested</div>
+            <div class="stat-value" id="stat-assets-count">-</div>
+            <div class="stat-desc">Unique immutable media nodes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Active Tracks</div>
+            <div class="stat-value" id="stat-tracks-count">-</div>
+            <div class="stat-desc">Curriculum path orchestrations</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">CMS Core Version</div>
+            <div class="stat-value" id="stat-version">v1.0</div>
+            <div class="stat-desc">Active Firestore collection version</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Server Host</div>
+            <div class="stat-value" style="font-size: 1.8rem; margin: 10px 0;">Port 8080</div>
+            <div class="stat-desc">Healthy REST API endpoints</div>
+          </div>
+        </div>
+
+        <div class="dashboard-panels">
+          <div class="panel-card flex-double">
+            <h3>Recent Invalidation Triggers</h3>
+            <div class="scroll-container">
+              <ul class="invalidation-list-preview" id="invalidation-preview-list">
+                <li class="loading-placeholder">Loading events...</li>
+              </ul>
+            </div>
+          </div>
+          <div class="panel-card">
+            <h3>Quick Actions</h3>
+            <div class="quick-actions-list">
+              <button class="action-btn" onclick="app.showAddAssetModal()">
+                <span>＋</span> Add New Content Asset
+              </button>
+              <button class="action-btn" onclick="app.switchToTab('ingestion')">
+                <span>🔄</span> Upload Excel Master Files
+              </button>
+              <button class="action-btn" onclick="app.switchToTab('tracks')">
+                <span>🔍</span> Browse Curriculum Paths
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INGESTION TAB -->
+      <section id="ingestion" class="content-tab">
+        <div class="tab-header">
+          <h1>Spreadsheet Ingestion Engine</h1>
+          <p>Load Excel spreadsheet master files to automatically normalize track structure and asset records in Firestore.</p>
+        </div>
+
+        <div class="ingest-grid">
+          <div class="panel-card">
+            <h3>Data Upload Center</h3>
+            <div class="ingest-type-selector" style="display: flex; gap: 10px; margin-bottom: 20px;">
+              <button type="button" class="action-btn active" id="btn-ingest-standard" style="flex: 1; justify-content: center; padding: 10px; font-size: 0.85rem;" onclick="app.setIngestType('standard')">Standard Ingest</button>
+              <button type="button" class="action-btn" id="btn-ingest-ai" style="flex: 1; justify-content: center; padding: 10px; font-size: 0.85rem;" onclick="app.setIngestType('ai')">Gemini AI Ingest (Custom)</button>
+            </div>
+            
+            <!-- Standard Structured Upload Form -->
+            <form id="ingest-form" class="ingest-form">
+              <div class="upload-dropzone" id="cms-dropzone">
+                <input type="file" id="cms-input" name="cms_file" accept=".xlsx" style="display:none;" required>
+                <div class="dropzone-content">
+                  <span class="drop-icon">📊</span>
+                  <p><strong>Academy CMS Master file (.xlsx)</strong></p>
+                  <p class="file-info" id="cms-file-name">Drag and drop file or click to browse</p>
+                </div>
+              </div>
+
+              <div class="upload-dropzone" id="track-dropzone">
+                <input type="file" id="track-input" name="track_file" accept=".xlsx" style="display:none;" required>
+                <div class="dropzone-content">
+                  <span class="drop-icon">🌿</span>
+                  <p><strong>Academy Track Master file (.xlsx)</strong></p>
+                  <p class="file-info" id="track-file-name">Drag and drop file or click to browse</p>
+                </div>
+              </div>
+
+              <button type="submit" class="submit-btn" id="ingest-submit-btn">
+                <span>⚡</span> Run Database Ingestion Pipeline
+              </button>
+            </form>
+
+            <!-- Gemini AI Custom Upload Form (Initially Hidden) -->
+            <form id="ai-ingest-form" class="ingest-form" style="display: none;">
+              <div class="upload-dropzone" id="custom-dropzone">
+                <input type="file" id="custom-input" name="custom_file" accept=".xlsx" style="display:none;" required>
+                <div class="dropzone-content">
+                  <span class="drop-icon">🧠</span>
+                  <p><strong>Custom Spreadsheet File (.xlsx)</strong></p>
+                  <p class="file-info" id="custom-file-name">Drag and drop custom file or click to browse</p>
+                </div>
+              </div>
+
+              <button type="submit" class="submit-btn" id="ai-submit-btn" style="background: var(--grad-violet-pink); color: #000;">
+                <span>✨</span> Extract & Ingest via Gemini AI
+              </button>
+            </form>
+          </div>
+
+          <div class="panel-card">
+            <h3>Ingestion Execution Console</h3>
+            <div class="console-box" id="console-output">
+              <span class="console-placeholder">Waiting for files to upload...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRACKS BROWSER TAB -->
+      <section id="tracks" class="content-tab">
+        <div class="tab-header">
+          <h1>Curriculum Track Browser</h1>
+          <p>Navigate the tracks structure hierarchy to review how chapters, lessons, and topics map to the asset nodes.</p>
+        </div>
+
+        <div class="tracks-browser-container">
+          <aside class="tracks-sidebar">
+            <h3>Select a Track</h3>
+            <div class="tracks-list" id="sidebar-tracks-list">
+              <div class="loading-placeholder">Loading tracks...</div>
+            </div>
+          </aside>
+
+          <div class="track-tree-view">
+            <div class="tree-header">
+              <h2 id="tree-title">Select a Track to load</h2>
+              <span class="badge" id="tree-badge">latest</span>
+            </div>
+            
+            <div id="tree-content" class="tree-content-area">
+              <div class="tree-placeholder">
+                <span style="font-size: 3rem;">🌿</span>
+                <p>Click on any curriculum track in the sidebar list to resolve and display its node structure hierarchy.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ASSET MANAGER TAB -->
+      <section id="assets" class="content-tab">
+        <div class="tab-header" style="flex-direction: row; justify-content: space-between; align-items: center; width: 100%;">
+          <div>
+            <h1>Content Asset Manager</h1>
+            <p>Direct view and modification of CMS nodes in the Firestore `assets` collection.</p>
+          </div>
+          <button class="add-asset-btn" onclick="app.showAddAssetModal()">
+            <span>＋</span> Create Asset
+          </button>
+        </div>
+
+        <div class="assets-controls">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="asset-search" placeholder="Search assets by name or topic...">
+          </div>
+          <div class="filter-box">
+            <select id="asset-filter-type">
+              <option value="">All Types</option>
+              <option value="video">Video</option>
+              <option value="document">Document</option>
+              <option value="quiz">Quiz</option>
+              <option value="lab">Lab</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="panel-card" style="padding: 0; overflow: hidden;">
+          <table class="assets-table">
+            <thead>
+              <tr>
+                <th width="40%">Asset Name</th>
+                <th width="15%">Type</th>
+                <th width="15%">Duration</th>
+                <th width="15%">Difficulty</th>
+                <th width="15%">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="assets-table-body">
+              <tr>
+                <td colspan="5" class="loading-placeholder">Loading assets collection...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- INVALIDATION LOGS TAB -->
+      <section id="logs" class="content-tab">
+        <div class="tab-header">
+          <h1>Cache Invalidation Logs</h1>
+          <p>Real-time event stream of updates triggered in Firestore, generating cache invalidation events for external SDK modules.</p>
+        </div>
+
+        <div class="panel-card">
+          <div class="log-controls">
+            <h3>Firestore Event Stream</h3>
+            <button class="action-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="app.loadLogs()">
+              🔄 Refresh Logs Feed
+            </button>
+          </div>
+          <div class="logs-feed-container">
+            <table class="logs-table">
+              <thead>
+                <tr>
+                  <th width="20%">Timestamp</th>
+                  <th width="15%">Trigger Event</th>
+                  <th width="20%">Document ID</th>
+                  <th width="45%">Details</th>
+                </tr>
+              </thead>
+              <tbody id="logs-table-body">
+                <tr>
+                  <td colspan="4" class="loading-placeholder">Loading log stream...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORY & UNDO TAB -->
+      <section id="history" class="content-tab">
+        <div class="tab-header">
+          <h1>Database Checkpoints & Rollbacks</h1>
+          <p>Review the history of modifications and revert the database state to any previously captured checkpoint.</p>
+        </div>
+
+        <div class="panel-card">
+          <div class="log-controls">
+            <h3>Commit Checkpoint Log</h3>
+            <button class="action-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="app.loadHistory()">
+              🔄 Refresh Checkpoints
+            </button>
+          </div>
+          
+          <div class="history-timeline" id="history-timeline-container" style="max-height: calc(100vh - 270px); overflow-y: auto;">
+            <div class="loading-placeholder">Loading database commits...</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ASSET EDITOR MODAL DIALOG -->
+  <dialog id="assetModal" closedby="any" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <h2 id="modalTitle">Add Content Asset</h2>
+      <button class="modal-close-btn" onclick="document.getElementById('assetModal').close()">✕</button>
+    </div>
+    
+    <form id="asset-form" class="modal-form">
+      <input type="hidden" id="edit-asset-id">
+      
+      <div class="form-group">
+        <label for="asset-name">Asset Name *</label>
+        <input type="text" id="asset-name" required placeholder="e.g. Introduction to Networks">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="asset-type">Asset Type *</label>
+          <select id="asset-type" required>
+            <option value="video">Video</option>
+            <option value="document">Document</option>
+            <option value="quiz">Quiz</option>
+            <option value="lab">Lab</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="asset-version">Version *</label>
+          <input type="number" id="asset-version" min="1" required value="1">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="asset-duration">Duration (seconds)</label>
+          <input type="number" id="asset-duration" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label for="asset-difficulty">Difficulty Level (1.0 to 5.0)</label>
+          <input type="number" id="asset-difficulty" min="1" max="5" step="0.1" placeholder="1.0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="asset-tags">Skill Tags (Comma-separated)</label>
+        <input type="text" id="asset-tags" placeholder="network definition, OSI layer, Wireshark">
+      </div>
+
+      <div class="form-group">
+        <label for="asset-topic">Lesson/Topic Association</label>
+        <input type="text" id="asset-topic" placeholder="e.g. Network Introduction">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="asset-cvp-ver">CVP Version</label>
+          <input type="text" id="asset-cvp-ver" placeholder="e.g. N/A or 2025.1.0">
+        </div>
+        <div class="form-group">
+          <label for="asset-eos-ver">EOS Version</label>
+          <input type="text" id="asset-eos-ver" placeholder="e.g. 4.31.0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="asset-prereq">Prerequisite Asset</label>
+          <input type="text" id="asset-prereq" placeholder="e.g. introduction-to-networks">
+        </div>
+        <div class="form-group" style="flex-direction: row; align-items: center; justify-content: flex-start; margin-top: 25px;">
+          <input type="checkbox" id="asset-needs-update" style="width: 20px; height: 20px; margin-right: 10px;">
+          <label for="asset-needs-update" style="margin-bottom: 0; cursor: pointer;">Flag as Needs Update</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="asset-comments">Comments / Maintenance Notes</label>
+        <textarea id="asset-comments" rows="3" placeholder="Voice a bit low, review audio quality."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" onclick="document.getElementById('assetModal').close()">Cancel</button>
+        <button type="submit" class="submit-btn-modal" id="submit-asset-btn">Save Asset</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Script initialization -->
+  <script src="app.js"></script>
+</body>
+</html>
