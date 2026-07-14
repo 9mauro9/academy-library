@@ -101,9 +101,16 @@ function App() {
       
       <div className="main-layout">
         {/* Left Sidebar (Only visible in Manual Path mode) */}
-        {activeTab === 'dashboard' && currentUser && (
+        {currentUser && (
           <>
-            <div style={{ width: `${sidebarWidth}px`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div 
+              style={{ 
+                width: `${sidebarWidth}px`, 
+                display: activeTab === 'dashboard' ? 'flex' : 'none', 
+                flexDirection: 'column', 
+                overflow: 'hidden' 
+              }}
+            >
               <ProficiencyDashboard 
                 onGenerate={handleGenerateFromDiagnostic} 
                 loading={loadingPath} 
@@ -112,6 +119,7 @@ function App() {
             <div 
               ref={resizerRef} 
               className={`resizer ${isResizing ? 'resizing' : ''}`} 
+              style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}
               onMouseDown={startResizing}
             />
           </>
@@ -121,20 +129,30 @@ function App() {
         <main className="workspace" style={{ padding: 0, gap: 0 }}>
           {currentUser && (
             <>
-              {activeTab === 'dashboard' && (
-                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-                  <LearningPathView 
-                    path={activePath} 
-                    currentUser={currentUser} 
-                  />
-                </div>
-              )}
+              <div 
+                style={{ 
+                  display: activeTab === 'dashboard' ? 'flex' : 'none', 
+                  flexDirection: 'column', 
+                  flex: 1, 
+                  overflow: 'hidden' 
+                }}
+              >
+                <LearningPathView 
+                  path={activePath} 
+                  currentUser={currentUser} 
+                />
+              </div>
 
-              {activeTab === 'chat' && (
-                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-                  <AIArchitectPanel onPathExtracted={(path) => setActivePath(path)} />
-                </div>
-              )}
+              <div 
+                style={{ 
+                  display: activeTab === 'chat' ? 'flex' : 'none', 
+                  flexDirection: 'column', 
+                  flex: 1, 
+                  overflow: 'hidden' 
+                }}
+              >
+                <AIArchitectPanel onPathExtracted={(path) => setActivePath(path)} />
+              </div>
             </>
           )}
         </main>
