@@ -339,16 +339,25 @@ const generateLocalChatResponse = (
       selected = catalog.filter(c => c.topic === "Campus" || c.topic.toLowerCase().includes("campus"));
     }
 
-    if (selected.length < 5) {
-      selected = catalog.slice(0, 12);
-    } else {
-      selected = selected.slice(0, 15);
+    // Parse target duration (default to 8 hours unless user asks for more)
+    let targetHours = 8;
+    const dayMatch = text.match(/(\d+)\s*day/);
+    const hourMatch = text.match(/(\d+)\s*hour/);
+    if (dayMatch) {
+      targetHours = parseInt(dayMatch[1], 10) * 6; // 6 hours of learning content per day
+    } else if (hourMatch) {
+      targetHours = parseInt(hourMatch[1], 10);
     }
 
+    // Sort available matching topics by difficulty level ascending (easiest to most difficult)
+    const sorted = [...selected].sort((a, b) => (a.difficultyLevel || 5) - (b.difficultyLevel || 5));
+
     let totalMins = 0;
-    const modules = selected.map((c: any) => {
+    const modules: any[] = [];
+    for (const c of sorted) {
+      if (totalMins >= targetHours * 60) break;
       totalMins += c.durationMins || 20;
-      return {
+      modules.push({
         topic: c.topic,
         lesson: c.lesson,
         duration: c.duration || "20:00",
@@ -357,15 +366,36 @@ const generateLocalChatResponse = (
         skillTag: c.skillTag,
         learningOutcome: c.learningOutcome,
         prerequisites: c.prerequisites
-      };
-    });
+      });
+    }
+
+    // Supplement from other catalog elements if matching set is shorter than targetHours
+    if (totalMins < targetHours * 60) {
+      const rest = catalog
+        .filter(c => !modules.some(m => m.lesson === c.lesson))
+        .sort((a, b) => (a.difficultyLevel || 5) - (b.difficultyLevel || 5));
+      for (const c of rest) {
+        if (totalMins >= targetHours * 60) break;
+        totalMins += c.durationMins || 20;
+        modules.push({
+          topic: c.topic,
+          lesson: c.lesson,
+          duration: c.duration || "20:00",
+          description: c.description,
+          difficultyLevel: c.difficultyLevel,
+          skillTag: c.skillTag,
+          learningOutcome: c.learningOutcome,
+          prerequisites: c.prerequisites
+        });
+      }
+    }
 
     const hours = Math.floor(totalMins / 60);
     const mins = Math.round(totalMins % 60);
 
-    reply = `I have designed a custom learning path for you based on our catalog: "${selected[0]?.topic} Foundations". It consists of ${selected.length} sequential modules. You can view it mapped on your workspace timeline.`;
+    reply = `I have designed a custom learning path for you based on our catalog: "${modules[0]?.topic || 'Academy'} Foundations". It consists of ${modules.length} sequential modules. You can view it mapped on your workspace timeline.`;
     learningPath = {
-      title: `Custom AI Path: ${selected[0]?.topic}`,
+      title: `Custom AI Path: ${modules[0]?.topic || 'Academy'}`,
       description: `Path created via conversational request: "${message}"`,
       totalDuration: `${hours} hrs ${mins} mins`,
       sequenceStatus: "valid",

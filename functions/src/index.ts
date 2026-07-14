@@ -263,7 +263,7 @@ export const chatWithArchitect = onCall(async (request) => {
     if (queryVector.length > 0) {
       const collectionRef = db.collection('assets');
       const queryRef = collectionRef.findNearest('embedding', queryVector, {
-        limit: 40,
+        limit: 100,
         distanceMeasure: 'COSINE'
       });
       const snapshot = await queryRef.get();
@@ -306,12 +306,12 @@ export const chatWithArchitect = onCall(async (request) => {
     console.warn("Vector search failed or index not built. Falling back to collection scan...", err);
   }
 
-  // Supplement or Fallback: Ensure we have a large enough catalog selection (at least 50 topics)
+  // Supplement or Fallback: Ensure we have a large enough catalog selection (at least 150 topics)
   const catalog = await fetchCatalogFromDB();
-  if (retrievedTopics.length < 25) {
+  if (retrievedTopics.length < 50) {
     const existingKeys = new Set(retrievedTopics.map(t => `${t.topic}-${t.lesson}`));
     for (const item of catalog) {
-      if (retrievedTopics.length >= 50) break;
+      if (retrievedTopics.length >= 150) break;
       const key = `${item.topic}-${item.lesson}`;
       if (!existingKeys.has(key)) {
         retrievedTopics.push(item);
@@ -347,7 +347,7 @@ Strict rules:
    - "reply": Your conversational explanation or advice to the user.
    - "learningPath": A structured learning path object following the schema below.
    If they do NOT ask for a path, you can set "learningPath" to null or omit it, returning only a "reply" field.
-5. Select a comprehensive set of modules of appropriate duration. If the user request implies or specifies a duration (e.g. '10 hours' or '24 hours'), select enough matching modules to total approximately that target duration. If no duration is specified, select 8 to 15 modules to ensure a robust, thorough curriculum.
+5. Select a comprehensive set of modules of appropriate duration. If the user request implies or specifies a duration (e.g. '10 hours', '24 hours', or '4 days' assuming 6 hours of content per day), select enough matching modules to total approximately that target duration. If no duration is specified, select 8 to 15 modules to ensure a robust, thorough curriculum. Ensure all modules in the path are strictly ordered from easiest to most difficult (ascending by difficultyLevel), while keeping logical prerequisite paths.
 
 Learning Path Schema format for "learningPath":
 {
