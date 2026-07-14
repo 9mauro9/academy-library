@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, activeTab, setActiv
         </div>
         <div className="brand-title">
           <h1>Academy Builder</h1>
-          <p>Personalized Learning Path Architect</p>
+          <p>Personalized Learning Path Builder</p>
         </div>
       </div>
 
