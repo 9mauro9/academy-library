@@ -1,40 +1,40 @@
-/* Academy Recommendations Design System */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+/* Arista Networks Brand Guidelines Design System */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
 :root {
-  --bg-primary: #090d16;
-  --bg-secondary: #111827;
-  --bg-tertiary: #1f2937;
+  --bg-primary: #090e1a;         /* Deep dark navy derived from Arista Blue #16325B */
+  --bg-secondary: #0f182c;       /* Secondary dark panel color */
+  --bg-tertiary: #162544;        /* Dark blue-gray card background */
   --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-secondary: #bbbdc0;     /* Arista Light Gray */
+  --text-muted: #738a96;         /* Arista Gray Blue */
   
-  --accent-color: #6366f1;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  --accent-color: #146095;       /* Arista Medium Blue */
+  --accent-gradient: linear-gradient(135deg, #146095 0%, #4473a9 100%); /* Arista Medium Blue to Light Blue gradient */
   
-  --class-bg: rgba(99, 102, 241, 0.15);
-  --class-border: rgba(99, 102, 241, 0.4);
-  --class-text: #818cf8;
+  --class-bg: rgba(68, 115, 169, 0.15); /* Light Blue transparent tint */
+  --class-border: rgba(68, 115, 169, 0.4);
+  --class-text: #7396bf;
   
-  --lab-bg: rgba(245, 158, 11, 0.15);
-  --lab-border: rgba(245, 158, 11, 0.4);
-  --lab-text: #fbbf24;
+  --lab-bg: rgba(212, 113, 34, 0.15);   /* Arista Orange transparent tint */
+  --lab-border: rgba(212, 113, 34, 0.4);
+  --lab-text: #d47122;
   
-  --break-bg: rgba(16, 185, 129, 0.12);
-  --break-border: rgba(16, 185, 129, 0.3);
-  --break-text: #34d399;
+  --break-bg: rgba(170, 208, 55, 0.12); /* Arista Light Green transparent tint */
+  --break-border: rgba(170, 208, 55, 0.3);
+  --break-text: #aad037;
   
-  --lunch-bg: rgba(239, 68, 68, 0.12);
-  --lunch-border: rgba(239, 68, 68, 0.3);
-  --lunch-text: #f87171;
+  --lunch-bg: rgba(233, 213, 84, 0.12);  /* Arista Yellow transparent tint */
+  --lunch-border: rgba(233, 213, 84, 0.3);
+  --lunch-text: #e9d554;
 
-  --border-color: rgba(255, 255, 255, 0.08);
-  --font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+  --border-color: rgba(115, 138, 150, 0.2); /* Arista Gray Blue border line */
+  --font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   
-  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --glass-bg: rgba(17, 24, 39, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.05);
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(15, 24, 44, 0.75);
+  --glass-border: rgba(115, 138, 150, 0.15);
 }
 
 * {
