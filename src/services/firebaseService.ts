@@ -330,7 +330,21 @@ const generateLocalChatResponse = (
   let learningPath: any = null;
 
   if (text.includes("path") || text.includes("track") || text.includes("generate") || text.includes("design")) {
-    const selected = catalog.slice(0, 4);
+    let selected = catalog;
+    if (text.includes("data center") || text.includes("dc") || text.includes("eos") || text.includes("vxlan")) {
+      selected = catalog.filter(c => c.topic === "Data Center" || c.topic.toLowerCase().includes("data center") || c.topic.toLowerCase().includes("eos") || c.topic.toLowerCase().includes("vxlan"));
+    } else if (text.includes("foundation") || text.includes("network") || text.includes("osi") || text.includes("subnet")) {
+      selected = catalog.filter(c => c.topic === "Network Foundations" || c.topic.toLowerCase().includes("network") || c.topic.toLowerCase().includes("foundations") || c.topic.toLowerCase().includes("osi") || c.topic.toLowerCase().includes("subnet"));
+    } else if (text.includes("campus")) {
+      selected = catalog.filter(c => c.topic === "Campus" || c.topic.toLowerCase().includes("campus"));
+    }
+
+    if (selected.length < 5) {
+      selected = catalog.slice(0, 12);
+    } else {
+      selected = selected.slice(0, 15);
+    }
+
     let totalMins = 0;
     const modules = selected.map((c: any) => {
       totalMins += c.durationMins || 20;
