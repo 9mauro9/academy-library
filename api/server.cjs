@@ -28,7 +28,7 @@ const { createCheckpoint, revertToCheckpoint } = require('../etl/history_manager
 const { loadGeminiParsedData } = require('../etl/gemini_loader.cjs');
 
 const app = express();
-const PORT = process.env.PORT || 8085;
+const PORT = process.env.PORT || 8082;
 
 const { getApps, initializeApp } = require('firebase-admin/app');
 
