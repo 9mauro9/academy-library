@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     <header className="app-header">
       <div className="brand-section">
         <div className="logo-container">
-          <BrainCircuit size={22} />
+          <BrainCircuit size={16} />
         </div>
         <div className="brand-title">
           <h1>Academy Builder</h1>

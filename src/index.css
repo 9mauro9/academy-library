@@ -101,7 +101,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 0.6rem 1.5rem;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
@@ -114,10 +114,10 @@ body {
 }
 
 .logo-container {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: var(--accent-gradient);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,15 +125,22 @@ body {
   box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
 }
 
+.logo-container i, .logo-container svg {
+  width: 16px;
+  height: 16px;
+}
+
 .brand-title h1 {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.025em;
+  line-height: 1.2;
 }
 
 .brand-title p {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
+  line-height: 1.2;
 }
 
 .controls-section {
@@ -161,9 +168,9 @@ body {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem;
   font-family: var(--font-family);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   outline: none;
   transition: border-color var(--transition-normal);
