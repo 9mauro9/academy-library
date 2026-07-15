@@ -30,3 +30,8 @@ If you are developing a production application, we recommend enabling type-aware
 ```
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+## Visual Assets & Branding
+- **Favicon**: Located at [public/favicon.svg](file:///Users/maurolollo/Desktop/Academy%20Library/public/favicon.svg) (served directly from the `public` folder).
+- **Icon Style**: Reflects the top-left main screen icon using the white triangle symbol `▲` on top of the purple/indigo gradient (`#6366f1` to `#a855f7`).
+
