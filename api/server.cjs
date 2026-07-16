@@ -35,7 +35,7 @@ const { getApps, initializeApp } = require('firebase-admin/app');
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-live-builder'
+    projectId: 'academy-builder'
   });
 }
 

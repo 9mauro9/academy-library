@@ -5,7 +5,7 @@ const path = require('path');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
-  projectId: 'academy-live-builder'
+  projectId: 'academy-builder'
 });
 
 const db = getFirestore();
