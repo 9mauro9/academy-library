@@ -1,3 +1,24 @@
+// Custom .env loader to avoid dependencies
+const fs = require('fs');
+const path = require('path');
+function loadEnv() {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    lines.forEach(line => {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        const key = match[1];
+        let val = match[2] || '';
+        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+        if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+        process.env[key] = val.trim();
+      }
+    });
+  }
+}
+loadEnv();
+
 const { AcademyLibrarySDK } = require('../sdk/academy-library-sdk.cjs');
 const admin = require('firebase-admin');
 const { getFirestore } = require('firebase-admin/firestore');
@@ -6,7 +27,7 @@ const { getApps, initializeApp } = require('firebase-admin/app');
 // Initialize Firebase Admin for tests
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-library'
+    projectId: 'academy-live-builder'
   });
 }
 const db = getFirestore();
@@ -18,7 +39,7 @@ async function runVerification() {
   console.log('\nStep 1: Initializing AcademyLibrarySDK...');
   const sdk = new AcademyLibrarySDK({
     apiBaseUrl: 'http://localhost:8082',
-    projectId: 'academy-library'
+    projectId: 'academy-live-builder'
   });
 
   // Keep track of invalidation calls

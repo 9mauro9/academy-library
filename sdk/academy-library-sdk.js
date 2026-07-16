@@ -16,7 +16,7 @@ class AcademyLibrarySDK {
     // Initialize Firebase if not already initialized
     if (getApps().length === 0) {
       initializeApp({
-        projectId: config.projectId || 'academy-library'
+        projectId: config.projectId || 'academy-live-builder'
       });
     }
     this.db = getFirestore();

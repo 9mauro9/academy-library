@@ -5,7 +5,7 @@ const { createCheckpoint, revertToCheckpoint } = require('../etl/history_manager
 
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-library'
+    projectId: 'academy-live-builder'
   });
 }
 

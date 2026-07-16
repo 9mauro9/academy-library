@@ -35,7 +35,7 @@ const { getApps, initializeApp } = require('firebase-admin/app');
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-library'
+    projectId: 'academy-live-builder'
   });
 }
 
@@ -124,6 +124,17 @@ const upload = multer({ storage });
 
 // Serve static files from public/ folder
 app.use(express.static(path.join(__dirname, '../public')));
+
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Middleware to parse JSON
 app.use(express.json());

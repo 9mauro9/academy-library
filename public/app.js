@@ -2,7 +2,10 @@
 
 class AcademyLibraryApp {
   constructor() {
-    this.apiBaseUrl = '';
+    // Connect to the Express server running on port 8082 if opened via file:// or a different port (like Firebase Hosting/Vite)
+    this.apiBaseUrl = (window.location.protocol === 'file:' || !window.location.port || window.location.port !== '8082')
+      ? 'http://localhost:8082'
+      : '';
     this.currentTab = 'dashboard';
     this.assets = [];
     
@@ -171,11 +174,11 @@ class AcademyLibraryApp {
   // API calls & Data Loaders
   async loadDashboardData() {
     try {
-      const res = await fetch('/api/assets');
+      const res = await fetch(this.apiBaseUrl + '/api/assets');
       const assets = await res.json();
       document.getElementById('stat-assets-count').innerText = Array.isArray(assets) ? assets.length : '-';
       
-      const tracksRes = await fetch('/api/tracks');
+      const tracksRes = await fetch(this.apiBaseUrl + '/api/tracks');
       const tracks = await tracksRes.json();
       document.getElementById('stat-tracks-count').innerText = Array.isArray(tracks) ? tracks.length : '-';
 
@@ -188,7 +191,7 @@ class AcademyLibraryApp {
 
   async loadDashboardLogsPreview() {
     try {
-      const res = await fetch('/api/cache-invalidations');
+      const res = await fetch(this.apiBaseUrl + '/api/cache-invalidations');
       const logs = await res.json();
       const previewList = document.getElementById('invalidation-preview-list');
       
@@ -221,7 +224,7 @@ class AcademyLibraryApp {
     tableBody.innerHTML = `<tr><td colspan="5" class="loading-placeholder">Loading assets collection from Firestore...</td></tr>`;
 
     try {
-      const res = await fetch('/api/assets');
+      const res = await fetch(this.apiBaseUrl + '/api/assets');
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || data.details || `Server returned status ${res.status}`);
@@ -279,7 +282,7 @@ class AcademyLibraryApp {
     tracksList.innerHTML = `<div class="loading-placeholder">Loading tracks...</div>`;
 
     try {
-      const res = await fetch('/api/tracks');
+      const res = await fetch(this.apiBaseUrl + '/api/tracks');
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || data.details || `Server returned status ${res.status}`);
@@ -319,7 +322,7 @@ class AcademyLibraryApp {
     treeContent.innerHTML = `<div class="loading-placeholder">Resolving and loading curriculum map tree...</div>`;
 
     try {
-      const res = await fetch(`/content?track_id=${trackId}&version=latest`);
+      const res = await fetch(`${this.apiBaseUrl}/content?track_id=${trackId}&version=latest`);
       const data = await res.json();
       
       this.renderTrackTree(data.curriculum, treeContent);
@@ -427,7 +430,7 @@ class AcademyLibraryApp {
     tableBody.innerHTML = `<tr><td colspan="4" class="loading-placeholder">Loading events...</td></tr>`;
 
     try {
-      const res = await fetch('/api/cache-invalidations');
+      const res = await fetch(this.apiBaseUrl + '/api/cache-invalidations');
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || data.details || `Server returned status ${res.status}`);
@@ -481,7 +484,7 @@ class AcademyLibraryApp {
     formData.append('track_file', this.trackFile);
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(this.apiBaseUrl + '/api/upload', {
         method: 'POST',
         body: formData
       });
@@ -568,7 +571,7 @@ class AcademyLibraryApp {
     };
 
     const isEdit = !!editId;
-    const url = isEdit ? `/api/assets/${editId}` : '/api/assets';
+    const url = isEdit ? `${this.apiBaseUrl}/api/assets/${editId}` : `${this.apiBaseUrl}/api/assets`;
     const method = isEdit ? 'PUT' : 'POST';
 
     try {
@@ -598,7 +601,7 @@ class AcademyLibraryApp {
     }
 
     try {
-      const res = await fetch(`/api/assets/${assetId}`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/assets/${assetId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -652,7 +655,7 @@ class AcademyLibraryApp {
     formData.append('custom_file', this.customFile);
 
     try {
-      const res = await fetch('/api/upload-unstructured', {
+      const res = await fetch(this.apiBaseUrl + '/api/upload-unstructured', {
         method: 'POST',
         body: formData
       });
@@ -686,7 +689,7 @@ class AcademyLibraryApp {
     container.innerHTML = `<div class="loading-placeholder">Loading database checkpoints...</div>`;
 
     try {
-      const res = await fetch('/api/history');
+      const res = await fetch(this.apiBaseUrl + '/api/history');
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || data.details || `Server returned status ${res.status}`);
@@ -734,7 +737,7 @@ class AcademyLibraryApp {
     }
 
     try {
-      const res = await fetch(`/api/revert/${commitId}`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/revert/${commitId}`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -758,7 +761,7 @@ class AcademyLibraryApp {
   startLogsPolling() {
     this.logsPollTimer = setInterval(async () => {
       try {
-        const res = await fetch('/api/cache-invalidations');
+        const res = await fetch(this.apiBaseUrl + '/api/cache-invalidations');
         const logs = await res.json();
         if (logs.length > 0) {
           const newestLog = logs[0];

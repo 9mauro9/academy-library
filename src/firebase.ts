@@ -7,9 +7,9 @@ import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 // pointing to the target project ensures production config aligns.
 const firebaseConfig = {
   apiKey: "AIzaSyFakeKeyForAcademyRecommendations1234",
-  authDomain: "academy-library.firebaseapp.com",
-  projectId: "academy-library",
-  storageBucket: "academy-library.appspot.com",
+  authDomain: "academy-live-builder.firebaseapp.com",
+  projectId: "academy-live-builder",
+  storageBucket: "academy-live-builder.appspot.com",
   messagingSenderId: "353347356715",
   appId: "1:353347356715:web:abcdef1234567890"
 };

@@ -6,7 +6,7 @@ const { getApps, initializeApp } = require('firebase-admin/app');
 // Initialize Firebase Admin for tests
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-library'
+    projectId: 'academy-live-builder'
   });
 }
 const db = getFirestore();
@@ -18,7 +18,7 @@ async function runVerification() {
   console.log('\nStep 1: Initializing AcademyLibrarySDK...');
   const sdk = new AcademyLibrarySDK({
     apiBaseUrl: 'http://localhost:8082',
-    projectId: 'academy-library'
+    projectId: 'academy-live-builder'
   });
 
   // Keep track of invalidation calls
