@@ -5,7 +5,7 @@ const { getApps, initializeApp } = require('firebase-admin/app');
 // Initialize Admin SDK
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-builder'
+    projectId: 'academy-library'
   });
 }
 

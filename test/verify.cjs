@@ -6,7 +6,7 @@ const { getApps, initializeApp } = require('firebase-admin/app');
 // Initialize Firebase Admin for tests
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-builder'
+    projectId: 'academy-library'
   });
 }
 const db = getFirestore();
@@ -17,8 +17,8 @@ async function runVerification() {
   // 1. Initialize the SDK
   console.log('\nStep 1: Initializing AcademyLibrarySDK...');
   const sdk = new AcademyLibrarySDK({
-    apiBaseUrl: 'http://localhost:8085',
-    projectId: 'academy-builder'
+    apiBaseUrl: 'http://localhost:8082',
+    projectId: 'academy-library'
   });
 
   // Keep track of invalidation calls
@@ -84,6 +84,7 @@ async function runVerification() {
   console.log(`Updating asset "${firstAsset.name}" (${assetIdToUpdate}) difficulty level from ${originalDifficulty} to ${newDifficulty}...`);
   
   const assetRef = db.collection('assets').doc(assetIdToUpdate);
+  const startTriggerCount = invalidationTriggeredCount;
   await assetRef.update({
     'attributes.difficulty_level': newDifficulty
   });
@@ -93,12 +94,12 @@ async function runVerification() {
   console.log('Waiting for cache invalidation propagation (max 5 seconds)...');
   for (let i = 0; i < 5; i++) {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    if (invalidationTriggeredCount > 0) {
+    if (invalidationTriggeredCount > startTriggerCount) {
       break;
     }
   }
 
-  if (invalidationTriggeredCount === 0) {
+  if (invalidationTriggeredCount <= startTriggerCount) {
     throw new Error('Verification failed: Cache invalidation event was not received by the SDK!');
   }
   console.log('  [PASS] Event-driven cache invalidation verified!');

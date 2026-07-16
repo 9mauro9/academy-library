@@ -7,7 +7,7 @@ const crypto = require('crypto');
 // Initialize Firebase Admin SDK
 if (getApps().length === 0) {
   initializeApp({
-    projectId: 'academy-builder'
+    projectId: 'academy-library'
   });
 }
 

@@ -9,14 +9,14 @@ class AcademyLibrarySDK {
    * @param {Object} config Config object containing apiBaseUrl and optional firebaseConfig
    */
   constructor(config = {}) {
-    this.apiBaseUrl = config.apiBaseUrl || 'http://localhost:8080';
+    this.apiBaseUrl = config.apiBaseUrl || 'http://localhost:8082';
     this.cache = new Map();
     this.invalidationListener = null;
 
     // Initialize Firebase if not already initialized
     if (getApps().length === 0) {
       initializeApp({
-        projectId: config.projectId || 'academy-builder'
+        projectId: config.projectId || 'academy-library'
       });
     }
     this.db = getFirestore();
