@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, Database, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { BrainCircuit, Database, ShieldCheck, Sun, Moon, Calendar } from 'lucide-react';
 import { isSandboxMode } from '../services/firebaseService';
 
 interface HeaderProps {
@@ -53,6 +53,13 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab('chat')}
           >
             AI Path
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'timeliner' ? 'active' : ''}`}
+            onClick={() => setActiveTab('timeliner')}
+          >
+            <Calendar size={13} style={{ marginRight: 4 }} />
+            Timeliner
           </button>
         </div>
 

@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { ProficiencyDashboard } from './components/ProficiencyDashboard';
 import { LearningPathView } from './components/LearningPathView';
 import { AIArchitectPanel } from './components/AIArchitectPanel';
+import { TimelineCalendar } from './components/TimelineCalendar';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -113,6 +114,20 @@ function App() {
             <AIArchitectPanel 
               onPathExtracted={(path) => setActivePath(path)} 
               onLoadingChange={setLoadingPath}
+            />
+          </div>
+
+          <div 
+            style={{ 
+              display: activeTab === 'timeliner' ? 'flex' : 'none', 
+              flexDirection: 'column', 
+              flex: 1, 
+              overflow: 'hidden' 
+            }}
+          >
+            <TimelineCalendar 
+              path={activePath} 
+              loading={loadingPath}
             />
           </div>
         </main>
