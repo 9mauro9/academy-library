@@ -184,8 +184,7 @@ function restack(
   const movedBlocks = allBlocks.filter(isChild);
   const stationaryBlocks = allBlocks.filter(b => !isChild(b));
 
-  // 2. Collision detection: count existing blocks on target day
-  const existingOnTargetDay = stationaryBlocks.filter(b => b.dayIndex === targetDay);
+  // 2. Collision detection: target day grid reflow
 
   // 3. Assign all moved blocks to the target day (preserving their sort order)
   const updatedMoved = movedBlocks
