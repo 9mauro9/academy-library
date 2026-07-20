@@ -5,5 +5,20 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if true;
     }
+
+    // Documented Collections matching for sync scripts
+    match /assets/{document=**} {
+      allow read, write: if true;
+    }
+    match /curriculum_map/{document=**} {
+      allow read, write: if true;
+    }
+    match /cms_history/{document=**} {
+      allow read, write: if true;
+    }
+    match /cache_invalidations/{document=**} {
+      allow read, write: if true;
+    }
   }
 }
+
