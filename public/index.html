@@ -49,147 +49,138 @@
 
     <!-- Main Content Area -->
     <main class="main-content">
-      
       <!-- DASHBOARD TAB -->
       <section id="dashboard" class="content-tab active">
         <div class="tab-header">
-          <h1>System Overview</h1>
-          <p>Real-time telemetry and management controls for the Academy Library database.</p>
+          <h1>CMS System Status</h1>
+          <p>Real-time telemetry and overview of master assets & curriculum maps.</p>
         </div>
-        
+
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-title">Total Assets Ingested</div>
-            <div class="stat-value" id="stat-assets-count">-</div>
-            <div class="stat-desc">Unique immutable media nodes</div>
+            <div class="stat-icon">🎬</div>
+            <div class="stat-info">
+              <span class="stat-label">Total Assets</span>
+              <span class="stat-value" id="stat-assets-count">-</span>
+            </div>
           </div>
+
           <div class="stat-card">
-            <div class="stat-title">Active Tracks</div>
-            <div class="stat-value" id="stat-tracks-count">-</div>
-            <div class="stat-desc">Curriculum path orchestrations</div>
+            <div class="stat-icon">🌿</div>
+            <div class="stat-info">
+              <span class="stat-label">Curriculum Tracks</span>
+              <span class="stat-value" id="stat-tracks-count">-</span>
+            </div>
           </div>
+
           <div class="stat-card">
-            <div class="stat-title">CMS Core Version</div>
-            <div class="stat-value" id="stat-version">v1.0</div>
-            <div class="stat-desc">Active Firestore collection version</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">Server Host</div>
-            <div class="stat-value" style="font-size: 1.8rem; margin: 10px 0;">Port 8080</div>
-            <div class="stat-desc">Healthy REST API endpoints</div>
+            <div class="stat-icon">⚡</div>
+            <div class="stat-info">
+              <span class="stat-label">SDK System Status</span>
+              <span class="stat-value" style="color: var(--accent-green); font-size: 1.2rem; font-weight: 700;">Healthy</span>
+            </div>
           </div>
         </div>
 
-        <div class="dashboard-panels">
-          <div class="panel-card flex-double">
-            <h3>Recent Invalidation Triggers</h3>
-            <div class="scroll-container">
-              <ul class="invalidation-list-preview" id="invalidation-preview-list">
-                <li class="loading-placeholder">Loading events...</li>
-              </ul>
-            </div>
+        <!-- Invalidation events preview card -->
+        <div class="panel-card" style="margin-top: 24px;">
+          <div class="panel-header">
+            <h3>Recent Invalidation Telemetry</h3>
+            <button class="action-btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="app.switchToTab('logs')">View All Stream Logs →</button>
           </div>
-          <div class="panel-card">
-            <h3>Quick Actions</h3>
-            <div class="quick-actions-list">
-              <button class="action-btn" onclick="app.showAddAssetModal()">
-                <span>＋</span> Add New Content Asset
-              </button>
-              <button class="action-btn" onclick="app.switchToTab('ingestion')">
-                <span>🔄</span> Upload Excel Master Files
-              </button>
-              <button class="action-btn" onclick="app.switchToTab('tracks')">
-                <span>🔍</span> Browse Curriculum Paths
-              </button>
-            </div>
-          </div>
+          <ul class="invalidation-preview-list" id="invalidation-preview-list">
+            <li class="loading-placeholder">Loading live invalidation telemetry...</li>
+          </ul>
         </div>
       </section>
 
-      <!-- INGESTION TAB -->
+      <!-- DATA INGESTION TAB -->
       <section id="ingestion" class="content-tab">
         <div class="tab-header">
-          <h1>Spreadsheet Ingestion Engine</h1>
-          <p>Load Excel spreadsheet master files to automatically normalize track structure and asset records in Firestore.</p>
+          <h1>Data Ingestion & Synchronization</h1>
+          <p>Upload Excel master files to generate Firestore documents, maintain referential integrity, and trigger invalidation events.</p>
         </div>
 
-        <div class="ingest-grid">
-          <div class="panel-card">
-            <h3>Data Upload Center</h3>
-            <div class="ingest-type-selector" style="display: flex; gap: 10px; margin-bottom: 20px;">
-              <button type="button" class="action-btn active" id="btn-ingest-standard" style="flex: 1; justify-content: center; padding: 10px; font-size: 0.85rem;" onclick="app.setIngestType('standard')">Standard Ingest</button>
-              <button type="button" class="action-btn" id="btn-ingest-ai" style="flex: 1; justify-content: center; padding: 10px; font-size: 0.85rem;" onclick="app.setIngestType('ai')">Gemini AI Ingest (Custom)</button>
+        <!-- Ingestion Mode Selector Tabs -->
+        <div class="ingest-mode-selector" style="display: flex; gap: 12px; margin-bottom: 24px;">
+          <button class="action-btn active" id="btn-ingest-standard" onclick="app.setIngestType('standard')" style="flex: 1; padding: 12px;">
+            📄 Standard Excel Master Sheets
+          </button>
+          <button class="action-btn" id="btn-ingest-ai" onclick="app.setIngestType('ai')" style="flex: 1; padding: 12px; background: rgba(99, 102, 241, 0.1); border-color: var(--accent-cyan);">
+            ✨ Gemini AI Unstructured Sheet Extractor
+          </button>
+        </div>
+
+        <div class="panel-card">
+          <!-- Standard Form -->
+          <form id="ingest-form" style="display: flex; flex-direction: column; gap: 24px;">
+            <div class="ingestion-grid">
+              <div class="dropzone" id="cms-dropzone">
+                <div class="dropzone-icon">📊</div>
+                <div class="dropzone-text">CMS Master File</div>
+                <div class="dropzone-sub">Academy CMS Master 1.xlsx</div>
+                <div class="file-selected-name" id="cms-file-name">No file selected</div>
+                <input type="file" id="cms-input" accept=".xlsx,.csv" style="display: none;">
+              </div>
+
+              <div class="dropzone" id="track-dropzone">
+                <div class="dropzone-icon">🌿</div>
+                <div class="dropzone-text">Track Master File</div>
+                <div class="dropzone-sub">Academy Track Master 1.xlsx</div>
+                <div class="file-selected-name" id="track-file-name">No file selected</div>
+                <input type="file" id="track-input" accept=".xlsx,.csv" style="display: none;">
+              </div>
             </div>
-            
-            <!-- Standard Structured Upload Form -->
-            <form id="ingest-form" class="ingest-form">
-              <div class="upload-dropzone" id="cms-dropzone">
-                <input type="file" id="cms-input" name="cms_file" accept=".xlsx" style="display:none;" required>
-                <div class="dropzone-content">
-                  <span class="drop-icon">📊</span>
-                  <p><strong>Academy CMS Master file (.xlsx)</strong></p>
-                  <p class="file-info" id="cms-file-name">Drag and drop file or click to browse</p>
-                </div>
-              </div>
 
-              <div class="upload-dropzone" id="track-dropzone">
-                <input type="file" id="track-input" name="track_file" accept=".xlsx" style="display:none;" required>
-                <div class="dropzone-content">
-                  <span class="drop-icon">🌿</span>
-                  <p><strong>Academy Track Master file (.xlsx)</strong></p>
-                  <p class="file-info" id="track-file-name">Drag and drop file or click to browse</p>
-                </div>
-              </div>
-
+            <div class="form-actions" style="display: flex; justify-content: flex-end;">
               <button type="submit" class="submit-btn" id="ingest-submit-btn">
-                <span>⚡</span> Run Database Ingestion Pipeline
+                🚀 Run Full Ingestion & Sync
               </button>
-            </form>
-
-            <!-- Gemini AI Custom Upload Form (Initially Hidden) -->
-            <form id="ai-ingest-form" class="ingest-form" style="display: none;">
-              <div class="upload-dropzone" id="custom-dropzone">
-                <input type="file" id="custom-input" name="custom_file" accept=".xlsx" style="display:none;" required>
-                <div class="dropzone-content">
-                  <span class="drop-icon">🧠</span>
-                  <p><strong>Custom Spreadsheet File (.xlsx)</strong></p>
-                  <p class="file-info" id="custom-file-name">Drag and drop custom file or click to browse</p>
-                </div>
-              </div>
-
-              <button type="submit" class="submit-btn" id="ai-submit-btn" style="background: var(--grad-violet-pink); color: #000;">
-                <span>✨</span> Extract & Ingest via Gemini AI
-              </button>
-            </form>
-          </div>
-
-          <div class="panel-card">
-            <h3>Ingestion Execution Console</h3>
-            <div class="console-box" id="console-output">
-              <span class="console-placeholder">Waiting for files to upload...</span>
             </div>
-          </div>
+          </form>
+
+          <!-- Gemini AI Form -->
+          <form id="ai-ingest-form" style="display: none; flex-direction: column; gap: 24px;">
+            <div class="dropzone" id="custom-dropzone" style="border-style: dashed; border-color: var(--accent-cyan);">
+              <div class="dropzone-icon">✨</div>
+              <div class="dropzone-text">Upload Custom Unstructured Spreadsheet</div>
+              <div class="dropzone-sub">Upload any custom Excel (.xlsx) file to parse layout and ingest automatically using Gemini 2.5 Flash</div>
+              <div class="file-selected-name" id="custom-file-name">No custom file selected</div>
+              <input type="file" id="custom-input" accept=".xlsx,.csv" style="display: none;">
+            </div>
+
+            <div class="form-actions" style="display: flex; justify-content: flex-end;">
+              <button type="submit" class="submit-btn" id="ai-submit-btn" style="background: var(--grad-cyan-blue);">
+                ✨ Extract & Ingest via Gemini AI
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card" style="margin-top: 24px;">
+          <h3>Ingestion Console Output</h3>
+          <div class="console-box" id="console-output">Ready for ingestion command. Select master files above to begin.</div>
         </div>
       </section>
 
       <!-- TRACKS BROWSER TAB -->
       <section id="tracks" class="content-tab">
         <div class="tab-header">
-          <h1>Curriculum Track Browser</h1>
-          <p>Navigate the tracks structure hierarchy to review how chapters, lessons, and topics map to the asset nodes.</p>
+          <h1>Track Hierarchy Browser</h1>
+          <p>Inspect resolved curriculum map trees and node hierarchy.</p>
         </div>
 
-        <div class="tracks-browser-container">
+        <div class="tracks-layout">
           <aside class="tracks-sidebar">
-            <h3>Select a Track</h3>
-            <div class="tracks-list" id="sidebar-tracks-list">
+            <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Curriculum Tracks</div>
+            <div id="sidebar-tracks-list">
               <div class="loading-placeholder">Loading tracks...</div>
             </div>
           </aside>
 
-          <div class="track-tree-view">
+          <div class="tree-container">
             <div class="tree-header">
-              <h2 id="tree-title">Select a Track to load</h2>
+              <h2 id="tree-title">Select a Track</h2>
               <span class="badge" id="tree-badge">latest</span>
             </div>
             
@@ -395,7 +386,9 @@
     </form>
   </dialog>
 
-  <!-- Script initialization -->
+  <!-- Firebase SDK script initialization -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
