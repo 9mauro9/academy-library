@@ -1,24 +1,37 @@
 // Academy Library CMS SPA Application Logic
 
-const firebaseConfig = {
-  apiKey: "AIzaSyFakeKeyForAcademyRecommendations1234",
-  authDomain: "academy-live-builder.firebaseapp.com",
-  projectId: "academy-live-builder",
-  storageBucket: "academy-live-builder.appspot.com",
-  messagingSenderId: "353347356715",
-  appId: "1:353347356715:web:abcdef1234567890"
-};
+const FIRESTORE_REST_BASE = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents';
 
-let db = null;
-try {
-  if (typeof firebase !== 'undefined') {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+function decodeFirestoreFields(fields) {
+  if (!fields) return {};
+  const res = {};
+  for (const [key, val] of Object.entries(fields)) {
+    if (val.stringValue !== undefined) res[key] = val.stringValue;
+    else if (val.integerValue !== undefined) res[key] = parseInt(val.integerValue, 10);
+    else if (val.doubleValue !== undefined) res[key] = parseFloat(val.doubleValue);
+    else if (val.booleanValue !== undefined) res[key] = val.booleanValue;
+    else if (val.referenceValue !== undefined) res[key] = val.referenceValue;
+    else if (val.mapValue && val.mapValue.fields) res[key] = decodeFirestoreFields(val.mapValue.fields);
+    else if (val.arrayValue && val.arrayValue.values) {
+      res[key] = val.arrayValue.values.map(v => v.stringValue || v.integerValue || v.doubleValue || (v.mapValue ? decodeFirestoreFields(v.mapValue.fields) : v));
     }
-    db = firebase.firestore();
   }
-} catch (err) {
-  console.warn('Firebase SDK init warning:', err);
+  return res;
+}
+
+async function fetchFirestoreRest(collection, pageSize = 500) {
+  const url = FIRESTORE_REST_BASE + '/' + collection + '?pageSize=' + pageSize;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Firestore REST returned status ' + response.status);
+  }
+  const data = await response.json();
+  const docs = data.documents || [];
+  return docs.map(d => {
+    const docId = d.name.split('/').pop();
+    const fields = decodeFirestoreFields(d.fields);
+    return Object.assign({ id: docId, doc_id: docId }, fields);
+  });
 }
 
 class AcademyLibraryApp {
@@ -28,6 +41,7 @@ class AcademyLibraryApp {
       : '';
     this.currentTab = 'dashboard';
     this.assets = [];
+    this.selectedTrackId = null;
     
     // Ingestion files state
     this.cmsFile = null;
@@ -203,20 +217,14 @@ class AcademyLibraryApp {
           assetsCount = assetsData.length;
           tracksCount = tracksData.length;
         }
-      } catch (e) {
-        // Fallback to direct Firestore
-      }
+      } catch (e) {}
 
-      if ((!assetsCount || !tracksCount) && db) {
-        const assetSnap = await db.collection('assets').get();
-        assetsCount = assetSnap.size;
+      if (!assetsCount || !tracksCount) {
+        const assets = await fetchFirestoreRest('assets', 500);
+        assetsCount = assets.length;
 
-        const currSnap = await db.collection('curriculum_map').get();
-        const tracksSet = new Set();
-        currSnap.forEach(d => {
-          const t = d.data().track_id || d.data().track_name;
-          if (t) tracksSet.add(t);
-        });
+        const curr = await fetchFirestoreRest('curriculum_map', 500);
+        const tracksSet = new Set(curr.map(d => d.track_name || d.track_id).filter(Boolean));
         tracksCount = tracksSet.size;
       }
 
@@ -239,22 +247,16 @@ class AcademyLibraryApp {
         if (res.ok) {
           logs = await res.json();
         }
-      } catch (e) {
-        // Fallback
-      }
+      } catch (e) {}
 
-      if (!logs && db) {
-        const snap = await db.collection('cache_invalidations').orderBy('timestamp', 'desc').limit(10).get();
-        logs = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          logs.push({
-            doc_id: d.doc_id || doc.id,
-            type: d.type || 'update',
-            timestamp: d.timestamp || new Date().toISOString(),
-            details: d.details || {}
-          });
-        });
+      if (!logs) {
+        const docs = await fetchFirestoreRest('cache_invalidations', 10);
+        logs = docs.map(d => ({
+          doc_id: d.doc_id || d.id,
+          type: d.type || 'update',
+          timestamp: d.timestamp || new Date().toISOString(),
+          details: d.details || {}
+        }));
       }
 
       const previewList = document.getElementById('invalidation-preview-list');
@@ -291,30 +293,23 @@ class AcademyLibraryApp {
       let data = null;
       try {
         const res = await fetch(this.apiBaseUrl + '/api/assets');
-        if (res.ok) {
-          data = await res.json();
-        }
-      } catch (e) {
-        // Fallback
-      }
+        if (res.ok) data = await res.json();
+      } catch (e) {}
 
-      if (!data && db) {
-        const snap = await db.collection('assets').limit(300).get();
-        data = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          data.push({
-            asset_id: doc.id,
-            name: d.name || doc.id,
-            type: d.type || 'video',
-            attributes: d.attributes || {}
-          });
-        });
+      if (!data) {
+        const docs = await fetchFirestoreRest('assets', 500);
+        data = docs.map(d => ({
+          asset_id: d.id,
+          name: d.name || d.id,
+          type: d.type || 'video',
+          attributes: d.attributes || {}
+        }));
       }
 
       this.assets = data || [];
       this.renderAssetsTable();
     } catch (err) {
+      console.error('loadAssets error:', err);
       tableBody.innerHTML = '<tr><td colspan="5" class="loading-placeholder" style="color: #ef4444;">Failed to load assets: ' + err.message + '</td></tr>';
     }
   }
@@ -369,20 +364,15 @@ class AcademyLibraryApp {
       let tracks = null;
       try {
         const res = await fetch(this.apiBaseUrl + '/api/tracks');
-        if (res.ok) {
-          tracks = await res.json();
-        }
-      } catch (e) {
-        // Fallback
-      }
+        if (res.ok) tracks = await res.json();
+      } catch (e) {}
 
-      if (!tracks && db) {
-        const snap = await db.collection('curriculum_map').get();
+      if (!tracks || !tracks.length) {
+        const docs = await fetchFirestoreRest('curriculum_map', 500);
         const map = new Map();
-        snap.forEach(doc => {
-          const d = doc.data();
-          const tid = d.track_id || 'default';
-          const tname = d.track_name || tid;
+        docs.forEach(d => {
+          const tid = d.track_id || d.track || 'default';
+          const tname = d.track_name || d.track || tid;
           if (!map.has(tid)) {
             map.set(tid, { track_id: tid, track_name: tname });
           }
@@ -402,16 +392,17 @@ class AcademyLibraryApp {
         '</button>';
       }).join('');
 
-      // Auto select first track if none active
-      if (tracks.length > 0) {
+      if (tracks.length > 0 && !this.selectedTrackId) {
         this.selectTrack(tracks[0].track_id, tracks[0].track_name);
       }
     } catch (err) {
+      console.error('loadTracks error:', err);
       tracksList.innerHTML = '<div class="loading-placeholder" style="color:#ef4444;">Failed: ' + err.message + '</div>';
     }
   }
 
   async selectTrack(trackId, trackName) {
+    this.selectedTrackId = trackId;
     document.querySelectorAll('.track-select-btn').forEach(btn => {
       if (btn.getAttribute('data-track-id') === trackId) {
         btn.classList.add('active');
@@ -435,20 +426,14 @@ class AcademyLibraryApp {
           const data = await res.json();
           curriculum = data.curriculum;
         }
-      } catch (e) {
-        // Fallback
-      }
+      } catch (e) {}
 
-      if (!curriculum && db) {
-        let query = db.collection('curriculum_map');
-        if (trackId) {
-          query = query.where('track_id', '==', trackId);
-        }
-        const snap = await query.get();
+      if (!curriculum) {
+        const docs = await fetchFirestoreRest('curriculum_map', 500);
+        const trackDocs = docs.filter(d => d.track_id === trackId || d.track_name === trackName);
+        
         const subTrackMap = new Map();
-
-        snap.forEach(doc => {
-          const d = doc.data();
+        trackDocs.forEach(d => {
           const stName = d.sub_track || 'General Sub-Track';
           if (!subTrackMap.has(stName)) {
             subTrackMap.set(stName, { sub_track_name: stName, lessons: [] });
@@ -463,7 +448,7 @@ class AcademyLibraryApp {
           }
 
           les.topics.push({
-            topic_id: doc.id,
+            topic_id: d.id,
             topic_name: d.topic || 'Untitled Topic',
             asset_name: d.topic || 'Asset',
             sorting: d.sorting
@@ -475,6 +460,7 @@ class AcademyLibraryApp {
 
       this.renderTrackTree(curriculum, treeContent);
     } catch (err) {
+      console.error('selectTrack error:', err);
       treeContent.innerHTML = '<div class="loading-placeholder" style="color:#ef4444;">Failed to build tree: ' + err.message + '</div>';
     }
   }
@@ -540,26 +526,18 @@ class AcademyLibraryApp {
       let logs = null;
       try {
         const res = await fetch(this.apiBaseUrl + '/api/cache-invalidations');
-        if (res.ok) {
-          logs = await res.json();
-        }
-      } catch (e) {
-        // Fallback
-      }
+        if (res.ok) logs = await res.json();
+      } catch (e) {}
 
-      if (!logs && db) {
-        const snap = await db.collection('cache_invalidations').orderBy('timestamp', 'desc').limit(30).get();
-        logs = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          logs.push({
-            doc_id: d.doc_id || doc.id,
-            type: d.type || 'update',
-            change_type: d.change_type || 'MODIFIED',
-            timestamp: d.timestamp || new Date().toISOString(),
-            details: d.details || {}
-          });
-        });
+      if (!logs) {
+        const docs = await fetchFirestoreRest('cache_invalidations', 100);
+        logs = docs.map(d => ({
+          doc_id: d.doc_id || d.id,
+          type: d.type || 'update',
+          change_type: d.change_type || 'MODIFIED',
+          timestamp: d.timestamp || new Date().toISOString(),
+          details: d.details || {}
+        }));
       }
 
       if (!logs || logs.length === 0) {
@@ -579,6 +557,7 @@ class AcademyLibraryApp {
         '</tr>';
       }).join('');
     } catch (err) {
+      console.error('loadLogs error:', err);
       tableBody.innerHTML = '<tr><td colspan="4" class="loading-placeholder" style="color: #ef4444;">Failed to load logs: ' + err.message + '</td></tr>';
     }
   }
@@ -592,27 +571,19 @@ class AcademyLibraryApp {
       let commits = null;
       try {
         const res = await fetch(this.apiBaseUrl + '/api/history');
-        if (res.ok) {
-          commits = await res.json();
-        }
-      } catch (e) {
-        // Fallback
-      }
+        if (res.ok) commits = await res.json();
+      } catch (e) {}
 
-      if (!commits && db) {
-        const snap = await db.collection('cms_history').orderBy('timestamp', 'desc').limit(20).get();
-        commits = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          commits.push({
-            commit_id: d.commit_id || doc.id,
-            description: d.description || 'Database Checkpoint',
-            author: d.author || 'CMS System',
-            timestamp: d.timestamp || new Date().toISOString(),
-            assets_count: d.assets_count || 0,
-            curriculum_count: d.curriculum_count || 0
-          });
-        });
+      if (!commits) {
+        const docs = await fetchFirestoreRest('cms_history', 50);
+        commits = docs.map(d => ({
+          commit_id: d.commit_id || d.id,
+          description: d.description || 'Database Checkpoint',
+          author: d.author || 'CMS System',
+          timestamp: d.timestamp || new Date().toISOString(),
+          assets_count: d.assets_count || 0,
+          curriculum_count: d.curriculum_count || 0
+        }));
       }
 
       if (!commits || commits.length === 0) {
@@ -641,6 +612,7 @@ class AcademyLibraryApp {
         '</div>';
       }).join('');
     } catch (err) {
+      console.error('loadHistory error:', err);
       container.innerHTML = '<div class="loading-placeholder" style="color:#ef4444;">Failed to fetch history logs: ' + err.message + '</div>';
     }
   }
@@ -754,13 +726,9 @@ class AcademyLibraryApp {
           if (res.ok) logs = await res.json();
         } catch (e) {}
 
-        if (!logs && db) {
-          const snap = await db.collection('cache_invalidations').orderBy('timestamp', 'desc').limit(5).get();
-          logs = [];
-          snap.forEach(doc => {
-            const d = doc.data();
-            logs.push({ timestamp: d.timestamp || new Date().toISOString() });
-          });
+        if (!logs) {
+          const docs = await fetchFirestoreRest('cache_invalidations', 5);
+          logs = docs.map(d => ({ timestamp: d.timestamp || new Date().toISOString() }));
         }
 
         if (logs && logs.length > 0) {
