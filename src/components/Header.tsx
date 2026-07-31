@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, Database, ShieldCheck, Sun, Moon, Calendar } from 'lucide-react';
+import { BrainCircuit, Database, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { isSandboxMode } from '../services/firebaseService';
 
 interface HeaderProps {
@@ -35,31 +35,24 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           <BrainCircuit size={16} />
         </div>
         <div className="brand-title">
-          <h1>Academy Builder</h1>
-          <p>Personalized Learning Path Builder</p>
+          <h1>Academy Library</h1>
+          <p>Arista Academy Course Library & CMS</p>
         </div>
       </div>
 
       <div className="controls-section">
         <div className="tab-container">
           <button 
-            className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
+            className={"tab-button " + (activeTab === 'dashboard' ? 'active' : '')}
             onClick={() => setActiveTab('dashboard')}
           >
             Manual Path
           </button>
           <button 
-            className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
+            className={"tab-button " + (activeTab === 'chat' ? 'active' : '')}
             onClick={() => setActiveTab('chat')}
           >
             AI Path
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'timeliner' ? 'active' : ''}`}
-            onClick={() => setActiveTab('timeliner')}
-          >
-            <Calendar size={13} style={{ marginRight: 4 }} />
-            Timeliner
           </button>
         </div>
 

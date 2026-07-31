@@ -1,37 +1,18 @@
-# React + TypeScript + Vite
+# Academy Library CMS
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Core Content Management System (CMS) and Master Data Portal for Arista Academy course materials, tracks, assets, and cache invalidation.
 
-Currently, two official plugins are available:
+## Live Application URL
+Hosted on Firebase Hosting at: **[https://academy-library.web.app](https://academy-library.web.app)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Overview
+Academy Library serves as the central administration portal for managing curriculum data, content assets, track hierarchies, database commit logs, and cache invalidation streams.
 
-## React Compiler
+- **Architecture**: Single Page Application (SPA)
+- **Backend/Database**: Shared Cloud Firestore Database (`academy-live-builder`)
+- **Hosting Target**: `academy-library`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Deployment
+```bash
+npx firebase deploy --only hosting:academy-library
 ```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
-
-## Visual Assets & Branding
-- **Favicon**: Located at [public/favicon.svg](file:///Users/maurolollo/Desktop/Academy%20Library/public/favicon.svg) (served directly from the `public` folder).
-- **Icon Style**: Reflects the top-left main screen icon using the white triangle symbol `▲` on top of the purple/indigo gradient (`#6366f1` to `#a855f7`).
-

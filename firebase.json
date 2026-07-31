@@ -21,7 +21,7 @@
   ],
   "hosting": {
     "site": "academy-library",
-    "public": "dist",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",

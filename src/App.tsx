@@ -4,18 +4,27 @@ import { Header } from './components/Header';
 import { ProficiencyDashboard } from './components/ProficiencyDashboard';
 import { LearningPathView } from './components/LearningPathView';
 import { AIArchitectPanel } from './components/AIArchitectPanel';
-import { TimelineCalendar } from './components/TimelineCalendar';
+import { CourseDetailsPanel } from './components/CourseDetailsPanel';
+
+const getInitialTab = (): string => {
+  const params = new URLSearchParams(window.location.search);
+  const tabParam = params.get('tab')?.toLowerCase();
+  if (tabParam && ['dashboard', 'chat'].includes(tabParam)) {
+    return tabParam;
+  }
+  return 'dashboard';
+};
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
   const [activePath, setActivePath] = useState<any>(null);
+  // const [selectedModules, setSelectedModules] = useState<any[] | null>(null);
   const [loadingPath, setLoadingPath] = useState(false);
 
   const resizerRef = useRef<HTMLDivElement>(null);
 
-  // Resizer logic cloning Academy Timeliner behavior
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -61,29 +70,38 @@ function App() {
     }
   };
 
+  const isLeftSidebarVisible = activeTab === 'dashboard' || activeTab === 'timeliner';
+
   return (
     <>
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className="main-layout">
-        {/* Left Sidebar (Only visible in Manual Path mode) */}
+        {/* Left Sidebar */}
         <div 
           style={{ 
             width: `${sidebarWidth}px`, 
-            display: activeTab === 'dashboard' ? 'flex' : 'none', 
+            display: isLeftSidebarVisible ? 'flex' : 'none', 
             flexDirection: 'column', 
             overflow: 'hidden' 
           }}
         >
-          <ProficiencyDashboard 
-            onGenerate={handleGenerateFromDiagnostic} 
-            loading={loadingPath} 
-          />
+          {activeTab === 'dashboard' && (
+            <ProficiencyDashboard 
+              onGenerate={handleGenerateFromDiagnostic} 
+              loading={loadingPath} 
+            />
+          )}
+          {activeTab === 'timeliner' && (
+            <CourseDetailsPanel 
+              onSelectionChange={() => {}} 
+            />
+          )}
         </div>
         <div 
           ref={resizerRef} 
           className={`resizer ${isResizing ? 'resizing' : ''}`} 
-          style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}
+          style={{ display: isLeftSidebarVisible ? 'block' : 'none' }}
           onMouseDown={startResizing}
         />
 
@@ -114,20 +132,6 @@ function App() {
             <AIArchitectPanel 
               onPathExtracted={(path) => setActivePath(path)} 
               onLoadingChange={setLoadingPath}
-            />
-          </div>
-
-          <div 
-            style={{ 
-              display: activeTab === 'timeliner' ? 'flex' : 'none', 
-              flexDirection: 'column', 
-              flex: 1, 
-              overflow: 'hidden' 
-            }}
-          >
-            <TimelineCalendar 
-              path={activePath} 
-              loading={loadingPath}
             />
           </div>
         </main>
