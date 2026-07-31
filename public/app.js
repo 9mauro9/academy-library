@@ -1,6 +1,6 @@
 // Academy Library CMS SPA Application Logic
 
-const FIRESTORE_REST_BASE = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents';
+const FIRESTORE_REST_BASE = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/academy-live-db/documents';
 
 function decodeFirestoreFields(fields) {
   if (!fields) return {};
