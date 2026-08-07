@@ -1,49 +1,116 @@
-# **Parallel Orchestration Workflow (OS 2.1) - Master Architectural Manual**
-*Optimized for Google Antigravity (AGY) & Gemini Agentic Framework*
+# **Parallel Orchestration Workflow (OS 2.1) - Master Architectural & Software Design Manual**
+*Standard Operating Specification for Google Antigravity, Firebase, Google Cloud Platform & Gemini Agentic Engineering*
 
 ---
 
-## **1. Executive Architecture & Antigravity Setup**
+## **1. Executive Architecture & Portfolio Software Hygiene**
 
-This Standard Operating Procedure (SOP) defines the mandatory steps for executing the Master Application Workflow using **Google Antigravity (AGY)** and **Gemini Agents**. It transforms multi-agent development from manual text prompting into an autonomous, event-driven, parallel engineering system.
+This Master Architectural Manual defines the mandatory software design rules, operational workflows, and security guardrails for building and maintaining enterprise applications across the portfolio (*Academy Library*, *Academy Timeliner*, *Academy Builder*, *Academy Insight*, and future systems).
 
-### **1.1 Workspace Customization Setup (`.agents/`)**
+It establishes an **Architectural Operating System (OS 2.1)** built on **Google Antigravity (AGY)** and **Gemini Agents**, transforming software development into a self-healing, event-driven, parallel engineering assembly line.
 
-Every repository operating on OS 2.1 must instantiate an `.agents/` configuration directory to establish declarative boundaries and skills across all subagents:
+### **1.1 The Core Pillars of Software Hygiene**
+
+1. **Domain-Driven Isolation**: Applications are partitioned into bounded contexts with clear schema interfaces.
+2. **Single Source of Truth (SSoT) Precedence**: Data schemas (`docs/data-model.md`) must be committed *before* consuming code is written.
+3. **Empirical Verification Precedence**: No task or PR is declared complete without concrete, un-truncated runtime test logs or execution evidence.
+4. **Zero-Symptom-Masking Rule**: Exceptions, null payloads, or network failures must never be swallowed or replaced with dummy fallbacks. Diagnostics must trace upstream root causes.
+5. **Least-Privilege Security**: IAM roles, Firebase Security Rules, and Secret Manager values are strictly scoped to minimum necessary access.
+6. **Continuous Visual & Technical Synchronization**: Architectural flowcharts (`ARCHITECTURE.md`) are maintained dynamically via background agents.
+
+---
+
+## **2. Portfolio Technical Architecture & Google Tech Stack Standard**
+
+```mermaid
+graph TD
+    Client[Client Tier: React / Vite SPAs & Next.js App Hosting] --> Gate[Security & API Tier: Firebase Auth & Security Rules]
+    
+    subgraph Data & Persistence Tier
+        FS[(Cloud Firestore: Document Storage & Metadata SSoT)]
+        DC[(Firebase Data Connect: Relational PostgreSQL)]
+        GCS[(Google Cloud Storage: Binary & Media Storage)]
+    end
+
+    subgraph Compute & Logic Tier
+        CF[Cloud Functions 2nd Gen: Event-Driven Triggers]
+        CR[Cloud Run: Scalable Containerized Microservices]
+        PS[Cloud Pub/Sub: Decoupled Message Bus]
+    end
+
+    subgraph Agentic & Intelligence Tier
+        AGY[Google Antigravity 2.0 Engine]
+        Gemini[Gemini 3.5 / 3.6 Pro & Flash Models]
+        Vertex[Vertex AI & Gen AI SDK]
+    end
+
+    Gate --> Compute
+    Compute --> Data
+    AGY -->|Orchestrates & Monitors| Compute
+    AGY -->|Invokes Models & Tools| Gemini
+    Vertex -->|RAG & Embeddings| Data
+```
+
+### **2.1 Standardized Technology Stack Matrix**
+
+| Layer | Primary Google Product | Operational Guidelines & Best Practices |
+| :--- | :--- | :--- |
+| **Frontend / Web Apps** | **React + Vite / Next.js (App Hosting)** | Modern Vanilla CSS / HSL tokens, ARIA accessibility, responsive layouts. No generic placeholders. |
+| **Authentication** | **Firebase Auth** | Anonymous auth for quick starts, OAuth/Custom tokens for elevated administrative operations. |
+| **Document Persistence** | **Cloud Firestore** | Hierarchical document modeling, sub-collections for historical audits (`/history`), composite index optimization. |
+| **Relational Persistence** | **Firebase Data Connect** | Structured GraphQL / PostgreSQL schema definitions for complex relational domain entities. |
+| **Binary Storage** | **Cloud Storage (GCS)** | Direct client uploads via Signed URLs. Automated lifecycle rules (transitioning archive blobs after 30 days). |
+| **Event Compute** | **Cloud Functions (2nd Gen)** | Idempotent background triggers responding to GCS uploads, Firestore events, and Pub/Sub topics. |
+| **Service Microservices** | **Cloud Run** | Containerized REST / gRPC microservices scaling automatically from 0 to N instances. |
+| **Telemetry & Observability** | **Google Cloud Logging** | Structured JSON logging, central log aggregation via `google-cloud-logging` MCP tool. |
+| **Agentic AI & LLMs** | **Google Antigravity & Gemini 3.5/3.6** | Multi-agent delegation, model tiering (`Pro` for reasoning, `Flash` for execution speed), tool calling. |
+
+---
+
+## **3. Antigravity Customization Framework (`.agents/`)**
+
+Every portfolio repository must instantiate a standardized `.agents/` configuration directory to establish declarative boundaries and skills across all subagents:
 
 ```
 .agents/
 ├── rules/
 │   ├── data_architecture.md    # Immutable rules for schema and data models
 │   ├── security_least_priv.md  # Firebase Auth & Security least-privilege enforcement
-│   └── frontend_design.md      # UI components & design system standards
+│   ├── frontend_design.md      # UI components & design system standards
+│   └── software_hygiene.md     # Error handling, logging, and test validation rules
 ├── skills/
 │   ├── firebase-orchestrator/  # SKILL.md for Firebase CLI & Emulator tooling
 │   ├── mermaid-architect/      # SKILL.md for Living Blueprint auto-generation
 │   └── sre-verifier/           # SKILL.md for CI/CD log inspection & RCA
 ├── hooks.json                  # Lifecycle hooks for pre-commit emulator verification
-└── mcp_config.json             # MCP server definitions (Firebase, GitHub, Chrome DevTools)
+└── mcp_config.json             # MCP server definitions (Firebase, GitHub, Chrome DevTools, GCP)
 ```
 
-### **1.2 Master Build-Out Checklist**
+### **3.1 Automated Lifecycle Hooks (`hooks.json`)**
 
-1. **Antigravity Workspace Configured**: `.agents/` rules, skills, and `hooks.json` initialized.
-2. **Project Charter & Planning Artifact Published**: `PROJECT_CHARTER.md` and `implementation_plan.md` generated with `request_feedback: true`.
-3. **MCP Servers Activated**: Firebase MCP, GitHub MCP, and Chrome DevTools MCP registered.
-4. **Schema Definition**: `docs/data-model.md` published as the single source of truth (SSoT).
-5. **Parallel Workstream Subagents Spawned**: Subagents invoked in isolated branched workspaces (`workspace: "branch"`).
-6. **Emulator & Automated Verification**: Local Firebase Emulator suite checks enforced via AGY lifecycle hooks.
-7. **Living Architecture File**: `ARCHITECTURE.md` auto-updated with Mermaid.js flowcharts via Gemini Flash subagents.
-8. **Automated Walkthrough & PR Review**: `walkthrough.md` generated with test logs and UI screenshot proofs.
-9. **Final CI/CD Deployment**: Deployed via DevOps/SRE Agent to production.
+Pre-commit and post-edit hooks automatically enforce software hygiene prior to git commits:
+
+```json
+{
+  "hooks": {
+    "pre-commit": [
+      "firebase emulators:exec --only firestore,functions 'npm test'",
+      "npm run lint"
+    ],
+    "post-edit": [
+      "npx oxlint --deny-warnings"
+    ]
+  }
+}
+```
 
 ---
 
-## **2. Specialized Gemini Subagent Registry**
+## **4. Programmatic Gemini Subagent Registry & Model Tiering**
 
-Antigravity orchestrates workstreams using heterogeneous model assignment to optimize for reasoning capability, throughput, and speed.
+Antigravity orchestrates workstreams using heterogeneous model assignment to optimize for reasoning capability, throughput, and execution speed.
 
-| Subagent Name | Core Mission | Gemini Model Tier | Primary MCP & Tool Suites | AGY Workspace Mode |
+| Subagent Name | Core Mission | Gemini Model Tier | Primary MCP & Tool Suites | Workspace Mode |
 | :--- | :--- | :--- | :--- | :--- |
 | **Blueprint Architect** | Schema design & SSoT maintenance (`docs/data-model.md`). | `Gemini 3.5/3.6 Pro` | Firebase MCP, Local FS | `branch` (`feat-schema`) |
 | **The Gatekeeper** | Auth & Security expert. Enforces least-privilege rules. | `Gemini 3.5/3.6 Pro` | Firebase Security MCP, Firebase Emulator | `branch` (`feat-security`) |
@@ -52,11 +119,9 @@ Antigravity orchestrates workstreams using heterogeneous model assignment to opt
 | **The Librarian** | Living Blueprint synchronization (`ARCHITECTURE.md`). | `Gemini 3.5/3.6 Flash` | Mermaid Tool, Git MCP | `share` (`docs-sync`) |
 | **DevOps / SRE Agent** | CI/CD management, Emulator log analysis, and release health. | `Gemini 3.5/3.6 Flash` | GitHub MCP, Cloud Run MCP, Shell Runner | `share` (`ops-main`) |
 
----
+### **4.1 Programmatic Subagent Definitions (`define_subagent`)**
 
-## **3. Programmatic Antigravity Subagent Definitions**
-
-Parent agents programmatically define subagents using `define_subagent` and invoke them concurrently:
+Parent agents programmatically define and invoke subagents concurrently:
 
 ```json
 {
@@ -78,15 +143,15 @@ Parent agents programmatically define subagents using `define_subagent` and invo
 }
 ```
 
-### **Antigravity Start-Up Execution (Python SDK / CLI)**
+### **4.2 Python SDK Orchestration (`google-antigravity`)**
 
-For programmatic orchestration using the `google-antigravity` Python SDK:
+For programmatic agent leasing inside scripts or test suites:
 
 ```python
 import asyncio
 from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig
 
-async def initialize_project_orchestration():
+async def run_portfolio_orchestration():
     config = LocalAgentConfig(
         system_instructions="Act as the Lead Architect for OS 2.1. Decompose features into parallel workstreams, initialize .agents rules, and spawn specialized subagents.",
         capabilities=CapabilitiesConfig(allow_shell=True, allow_fs_write=True)
@@ -97,56 +162,77 @@ async def initialize_project_orchestration():
             print(token, end="")
 
 if __name__ == "__main__":
-    asyncio.run(initialize_project_orchestration())
+    asyncio.run(run_portfolio_orchestration())
 ```
 
 ---
 
-## **4. The Master Application Workflow Phases**
+## **5. Master Application Workflow Phases**
 
-### **Phase 1: Planning Mode & Parallel Task Decomposition**
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Developer/User
+    participant Lead as Lead Architect (Planning Mode)
+    participant Data as Blueprint Architect (Gemini Pro)
+    participant Workstream as Parallel Subagents (UI, Logic, Security)
+    participant Verifier as DevOps/SRE Agent (Hooks & Emulators)
+    participant Lib as The Librarian (Gemini Flash)
+
+    Developer->>Lead: Request Feature Build / Update
+    Lead->>Lead: Create implementation_plan.md & Request Approval
+    Developer-->>Lead: Approve Plan
+    Lead->>Data: Spawn feat-schema (docs/data-model.md)
+    Data-->>Lead: SSoT Committed
+    Lead->>Workstream: Parallel Dispatch (feat-ui, feat-logic, feat-security)
+    Workstream->>Verifier: Run Firebase Emulator Suite & Hooks
+    Verifier-->>Workstream: Pass Execution Logs / RCA on Failure
+    Workstream->>Lead: Pull Requests Ready
+    Lead->>Lib: Trigger ARCHITECTURE.md Sync
+    Lib-->>Lead: Mermaid Flowcharts Updated
+    Lead->>Developer: Generate walkthrough.md with Proof Screenshots
+```
+
+### **Phase 1: Planning Mode & Task Decomposition**
 * **Lead Architect** enters Antigravity **Planning Mode**.
-* Generates `PROJECT_CHARTER.md` and `implementation_plan.md`.
-* Defines workstreams and invokes parallel subagents (`invoke_subagent`) with isolated git branches (`feat-schema`, `feat-auth`, `feat-ui`).
-* Requires explicit user review on `implementation_plan.md` before execution.
+* Generates `PROJECT_CHARTER.md` and `implementation_plan.md` with explicit feedback flags (`request_feedback: true`).
+* Requires user approval before code mutations begin.
 
 ### **Phase 2: Structural Data Modeling & SSoT Declaration**
 * **Blueprint Architect** (`Gemini Pro`) establishes `docs/data-model.md`.
-* All schema changes are committed to SSoT *before* frontend or backend agents consume data types.
-* Immutable contract pattern prevents "architectural drift".
+* All collection names, document fields, and data types are declared and committed prior to consumer code development.
 
 ### **Phase 3: Parallelized Build & MCP-Powered Delegation**
-* Concurrent execution across subagents:
-  * **Interface Builder** builds UI components and verifies them visually using `chrome-devtools-mcp` (taking DOM snapshots, color contrast, and tap target audits).
-  * **The Logic Engine** writes idempotent Cloud Functions and tests endpoints.
-  * **The Gatekeeper** writes security rules and validates against `firebase_firestore` emulator.
+* Concurrent workstream execution in isolated Git branches (`workspace: "branch"`):
+  * **Interface Builder**: Builds modular UI components and visually audits layout via `chrome-devtools-mcp` (DOM snapshots, contrast, tap target sizing).
+  * **The Logic Engine**: Writes idempotent Cloud Functions (2nd Gen) and validates endpoints.
+  * **The Gatekeeper**: Enforces least-privilege security rules (`firestore.rules`) and tests against local Firestore Emulator.
 
-### **Phase 4: Automated Verification Loop & Lifecycle Hooks**
-* Enforces `hooks.json` pre-commit checks:
-  * Automatically executes `firebase emulators:exec "npm test"` before any pull request.
-* In the event of a failure, the SRE Agent captures full log tracebacks natively without swallowing exceptions or using dummy fallbacks.
-* Generates an automated Root Cause Analysis (RCA).
+### **Phase 4: Automated Verification Loop & Software Hygiene**
+* Pre-commit hooks (`hooks.json`) automatically execute emulator test suites.
+* If a failure occurs, the SRE Agent extracts full log tracebacks without masking errors or substituting mock stubs.
+* Performs automated Root Cause Analysis (RCA).
 
 ### **Phase 5: Automated Visualization & Living Blueprint Sync**
-* **The Librarian** (`Gemini Flash`) triggers on git commit events.
-* Parses `docs/data-model.md` and `firestore.rules` to regenerate Mermaid.js diagrams in `ARCHITECTURE.md`.
-* Runs as a background task using AGY `schedule` cron or post-merge GitHub Action (`update-docs.yml`).
+* **The Librarian** (`Gemini Flash`) triggers on git merge events.
+* Regenerates Mermaid.js ERD and system topology flowcharts in `ARCHITECTURE.md`.
+* Automated via GitHub Action (`update-docs.yml`).
 
 ### **Phase 6: Integration, Walkthrough & Production Deployment**
-* SRE Agent runs full integration test suite.
+* SRE Agent executes end-to-end integration tests.
 * Generates `walkthrough.md` artifact containing:
   * Summary of changes across workstreams.
-  * Verification logs from emulator suite.
+  * Verification logs from Firebase Emulator suite.
   * Visual proof screenshots from Chrome DevTools MCP.
-* Prompts Lead Architect for final deployment approval to production (`PRODUCTION_URL`).
+* Deploys application to production URL (`PRODUCTION_URL`).
 
 ---
 
-## **5. Comprehensive DevOps / SRE Agent Profile**
+## **6. Comprehensive DevOps / SRE Agent Profile**
 
-The DevOps/SRE Agent is the custodian of system reliability, operational telemetry, and CI/CD pipelines.
+The DevOps/SRE Agent is the custodian of system reliability, operational telemetry, CI/CD pipelines, and software hygiene.
 
-### **5.1 Dual-Domain SRE Architecture**
+### **6.1 Dual-Domain SRE Architecture**
 
 ```mermaid
 graph TD
@@ -162,39 +248,39 @@ graph TD
     InfraSRE --> I3[ANTA Network Ready For Use Tests]
 ```
 
-### **5.2 Cloud & Application SRE Responsibilities**
-* **Guardrail Enforcement**: Monitors memory/CPU consumption of local emulators and background tasks (`manage_task`).
-* **Telemetry & Logging**: Queries GCP Cloud Logging via `google-cloud-logging` MCP to detect runtime exceptions.
-* **Automated RCA**: Parses un-truncated tracebacks upon pipeline failures to generate actionable root cause diagnostics.
+### **6.2 Cloud & Application SRE Responsibilities**
+* **Guardrail & Memory Enforcement**: Monitors CPU/Memory utilization of background processes using `manage_task`.
+* **Central Log Diagnostics**: Queries GCP Cloud Logging via `google-cloud-logging` MCP to capture live stack traces.
+* **Automated RCA**: Parses un-truncated tracebacks to isolate exact failure points without manual intervention.
 
-### **5.3 Enterprise Infrastructure SRE Responsibilities (Optional Module)**
+### **6.3 Enterprise Infrastructure SRE Responsibilities (Optional Module)**
 * **Network as Code (NaC)**: Manages network device state using Ansible collections (`arista.avd`), Jinja2 templates, and `cvprac`.
 * **Fabric Validation**: Executes ANTA test suites to verify L2/L3 topology health and BGP sessions.
 * **Zero Touch Management**: Handles Zero Touch Provisioning (ZTP) and PKI/TLS certificate lifecycles.
 
 ---
 
-## **6. SRE Metrics, Governance & Reliability Guards**
+## **7. SRE Metrics, Governance & Reliability Guards**
 
-### **6.1 Key Performance Indicators (KPIs)**
+### **7.1 Key Performance Indicators (KPIs)**
 
-| Metric | Definition | SRE Objective | Antigravity Mechanism |
+| Metric | Definition | Target Objective | Antigravity Engine Mechanism |
 | :--- | :--- | :--- | :--- |
-| **Time to Detection (TTD)** | Time from failure to alert. | `< 30 seconds` | Background task watcher (`manage_task`) |
+| **Time to Detection (TTD)** | Time from failure to diagnostic alert. | `< 30 seconds` | Background task watcher (`manage_task`) |
 | **Response Velocity (TTR)** | Time from detection to automated fix. | Rapid containment | Subagent auto-remediation loop |
-| **Emulator Test Pass Rate** | % of PRs passing local emulation. | `100% mandatory` | Pre-commit lifecycle hook (`hooks.json`) |
-| **Living Blueprint Sync** | Delay between schema change & `ARCHITECTURE.md` update. | Real-time (`< 1 min`) | `The Librarian` subagent trigger (`Gemini Flash`) |
+| **Emulator Test Pass Rate** | % of PRs passing local emulator suite. | `100% mandatory` | Pre-commit lifecycle hook (`hooks.json`) |
+| **Living Blueprint Sync** | Delay between schema update & `ARCHITECTURE.md` sync. | Real-time (`< 1 min`) | `The Librarian` subagent (`Gemini Flash`) |
 
-### **6.2 Crucial Architectural Guards**
+### **7.2 Crucial Architectural Guards**
 
-* **Guard 1: Isolated Workstream Branching**: Zero direct commits to `main`. All agents work in isolated worktrees (`workspace: "branch"`).
-* **Guard 2: Declarative Rule Precedence**: Subagent instructions are bound by `.agents/rules/`. Subagents cannot alter files outside their scope.
-* **Guard 3: SSoT First-Mutation Rule**: Schema changes in `docs/data-model.md` must be committed *before* consuming code is written.
-* **Guard 4: Empirical Verification Rule**: No turn or task is marked complete without concrete, empirical test logs or execution output.
+* **Guard 1: Isolated Workstream Branching**: Zero direct commits to `main`. All agents execute in isolated worktrees (`workspace: "branch"`).
+* **Guard 2: Declarative Rule Precedence**: Subagent instructions are bound by `.agents/rules/`. Subagents cannot modify files outside their domain scope.
+* **Guard 3: SSoT First-Mutation Rule**: Schema declarations in `docs/data-model.md` must be committed *before* consuming application code is written.
+* **Guard 4: Empirical Verification Rule**: No turn or task is marked complete without concrete, un-truncated test logs or execution output.
 
 ---
 
-## **7. Living Blueprint Protocol**
+## **8. Living Blueprint Protocol**
 
 `ARCHITECTURE.md` is maintained dynamically by **The Librarian** agent using auto-generated Mermaid.js blocks:
 
@@ -214,10 +300,10 @@ erDiagram
     }
 ```
 
-Every merge to `main` executes `update-docs.yml`, keeping system diagrams accurate and eliminating documentation drift.
+Every merge to `main` triggers `update-docs.yml`, ensuring documentation matches running production state at all times.
 
 ---
 
-## **8. Conclusion: The Autonomous Enterprise Ecosystem**
+## **9. Conclusion: The Autonomous Enterprise Ecosystem**
 
-By upgrading the **Parallel Orchestration Workflow (OS 2.1)** with **Google Antigravity** and **Gemini Agents**, development teams transition from fragmented manual prompting to a disciplined, self-healing, parallel software assembly line. Through native subagents, model tiering, MCP integration, and automated verification loops, OS 2.1 delivers unprecedented developer velocity while maintaining strict architectural stability.
+By enforcing the **Parallel Orchestration Workflow (OS 2.1)** across all applications, development teams operate a unified, high-performance software assembly line. Leveraging **Google Antigravity**, **Firebase**, **Google Cloud Platform**, and **Gemini Agents**, portfolio applications achieve rapid developer velocity, empirical software hygiene, and robust architectural stability.
