@@ -1,206 +1,159 @@
-# Academy Library: CMS & Asset Lifecycle Architecture Specification
+# Academy Library: Content Management System & Asset Lifecycle Architecture Specification
 
-This document defines the architecture, data structures, versioning rules, ingestion pipelines, and event-driven lifecycle management for the **Academy Library** Digital Asset Management (DAM) system and Content Management System (CMS).
-
----
-
-## 1. Executive Summary & System Overview
-
-`Academy Library` provides a unified, single-source-of-truth metadata repository and digital asset lifecycle engine for the entire **academy-live-builder** multi-site ecosystem:
-
-* **Academy Timeliner**: Queries course asset timelines and dependency structures.
-* **Academy Builder**: Composes learning paths and integrates interactive track modules.
-* **Academy Insight**: Performs RAG vector searches and retrieves document chunks.
-* **Academy Library Portal**: Manages direct asset uploads, metadata tagging, and lifecycle versioning.
-
-The asset management core is powered by Google Cloud Storage and Firebase Firestore (`academy-live-db`), orchestrated with event-driven Firebase Cloud Functions v2 and a custom SDK for edge-cached client consumption.
-
-```mermaid
-graph TD
-    subgraph Asset Lifecycle Ingestion
-        A[Raw Assets: PDF / Video / Excel] --> B[ETL Pipeline / Import Scripts]
-        B --> C[Cloud Storage & Firestore Write]
-    end
-
-    subgraph Firebase Core Engine
-        C --> D[(Firestore: assets & media_catalog)]
-        D --> E[Cloud Functions Triggers]
-        E --> F[(Firestore: cache_invalidations)]
-        E --> G[(Firestore: cms_history Checkpoints)]
-    end
-
-    subgraph Consumer Clients
-        F --> H[Academy Library SDK Cache Listener]
-        H --> I[Academy Timeliner]
-        H --> J[Academy Builder]
-        H --> K[Academy Insight RAG]
-    end
-```
+* **Document Status**: Architecture & Implementation Guide (Version 2)
+* **Target Ecosystem**: Academy Suite (*Library, Timeliner, Builder, Insight, Ask*)
+* **Infrastructure Platform**: Google Cloud Platform (Firestore, GCS, Cloud Functions/Run) & Google Anti-Gravity Orchestration
 
 ---
 
-## 2. Asset Lifecycle Stages
+## 1. Executive Summary & Architectural Goals
 
-The asset lifecycle consists of five distinct phases from creation to distribution and invalidation:
+The **Academy Library** acts as the centralized database and asset management core for the entire suite of network engineering training applications. As the volume of video assets scales into hundreds and thousands of items, managing asset lifecycles, title changes, and partial media revisions becomes a critical operational challenge.
 
-### Stage 1: Ingestion & Metadata Extraction
-* **Sources**: Course manuals, slide decks, lab topologies (PDFs), video modules, and structured track spreadsheets (`Academy CMS Master 1.xlsx`).
-* **Normalization**: Assets are slugified into deterministic document IDs (`asset_id`) (e.g. `why-cloudvision`).
-* **Validation**: Required fields (`name`, `type`, `attributes`) are validated prior to Firestore commit.
+Without a robust architecture, minor video tweaks or title modifications can obscure whether materials have been updated or replaced. This document outlines the architectural strategy to extend the Academy Library platform, ensuring granular asset lifecycle tracking, metadata integrity, and high operational performance leveraging Google Cloud Platform and Google Anti-Gravity orchestration.
 
-### Stage 2: Storage & Media Catalog Routing
-* **Storage Uri**: Assets are saved to Firebase Storage under organized buckets with corresponding `gcs_uri` identifiers (e.g. `gs://academy-live-builder.appspot.com/assets/...`).
-* **Secure Access**: Download tokens generate `attributes.url` values for secure HTTP client downloads.
-* **Media Cataloging**: Large files produce entries in `media_catalog` with extracted MIME types, sizes, and study duration metrics.
+> [!NOTE]
+> **Important Architectural Note on Student Progress Data:**
+> The Academy Library system does not natively own, store, or require direct access to student progress information or completion states. Student tracking and LMS state are external concerns. In this architecture, connecting student progress data to the Academy Library database is strictly an optional extension point, enabled via external integrations or decoupled downstream consumers if required.
 
-### Stage 3: Versioning & Checkpoint History
-* **Active Version Tracking**: Each asset maintains an incremental integer `version` field (defaulting to `1`) and a boolean `is_latest` flag.
-* **Non-Destructive Updates**: Updating an asset creates a version increment or modifies metadata while preserving historical references.
-* **CMS Checkpoints**: Operational state snapshots are captured in `cms_history`, recording ISO 8601 timestamps, author identifiers, change descriptions, and complete state copies for rollback capability.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Admin as Content Administrator
-    participant CMS as CMS Core Engine
-    participant FS as Firestore (assets)
-    participant Hist as Firestore (cms_history)
-    participant CF as Cloud Functions Trigger
-
-    Admin->>CMS: Submit Asset Update (v2)
-    CMS->>FS: Mark previous v1 as is_latest=false
-    CMS->>FS: Write new asset record (version=2, is_latest=true)
-    CMS->>Hist: Record checkpoint payload into cms_history
-    FS-->>CF: Trigger onAssetUpdate
-    CF->>FS: Write cache_invalidations document
-```
-
-### Stage 4: Event-Driven Cache Invalidation
-* **Trigger Functions**: Cloud Functions (`onAssetUpdate` and `onCurriculumWrite`) monitor mutations on `assets/{assetId}` and `curriculum_map/{mapId}`.
-* **Invalidation Event Generation**: When changes occur, the function writes an event payload to `cache_invalidations` with the modified document ID, change type (`create`, `update`, `delete`), timestamp, and delta summary.
-
-### Stage 5: Client Synchronization & SDK Consumption
-* **SDK Listener**: The `AcademyLibrarySDK` maintains an active snapshot listener on `cache_invalidations`.
-* **Selective Invalidation**: Upon receiving an invalidation event, client-side cached assets or curriculum mappings are evicted and refetched.
-* **Fallback API**: REST service handlers (`api/server.js`) deliver edge-compatible JSON responses for non-Node clients.
+### Key Architectural Objectives
+* **Logical Decoupling**: Completely isolate curriculum structure (learning nodes) from metadata assets and binary storage blobs.
+* **Decoupled LMS / Progress Integration**: Provide version-aware metadata endpoints for external student progress tracking without hard dependencies on user database schemas.
+* **Title & Metadata Alias History**: Preserve historical context (e.g., "Formerly Known As") to maintain content traceability across title updates.
+* **Immutable Audit Trails**: Record all media edits, replacements, and metadata changes in append-only Firestore sub-collections.
+* **Autonomous Orchestration**: Support Anti-Gravity agents performing background asset syncing, metadata verification, and lifecycle enforcement.
 
 ---
 
-## 3. Core Database Schemas & Data Contracts
+## 2. High-Level System Architecture & Google Cloud Integration
 
-### 3.1 Collection: `assets`
-Stores normalized, unique, and versioned asset metadata.
+The architecture relies on a multi-tier cloud topology where Google Cloud components handle persistence, processing, and distribution, while Google Anti-Gravity orchestrates background tasks and automated maintenance routines.
 
+| Component | Technology Stack | Architectural Role & Function |
+| :--- | :--- | :--- |
+| **Central Database** | Google Cloud Firestore | Stores structured JSON metadata, curriculum trees, and version histories with low latency. Optionally links external progress payloads. |
+| **Media Storage** | Google Cloud Storage (GCS) | Houses high-definition video binaries, downloadable assets, lab diagrams, and archived video blobs across regional storage buckets. |
+| **Compute & Events** | Cloud Functions / Cloud Run | Executes asynchronous triggers on GCS file upload to generate checksums, update metadata, and calculate video durations. |
+| **Hosting & Routing** | Firebase Multi-Site Hosting | Provides secure, SSL-encrypted edge distribution for front-end modules (*Timeliner, Builder, Insight, Ask*). |
+| **Orchestration Layer** | Google Anti-Gravity | Orchestrates automated asset ingestion, AI-driven content tagging, transcription indexing for *Academy Ask*, and lifecycle maintenance. |
+
+---
+
+## 3. Data Model & Entity Relationship Specification
+
+To prevent breaking course links when assets are updated or renamed, entities are split into abstraction layers: **Learning Node** (curriculum position), **Asset Record** (metadata and active version pointer), and **Version History** (historical records). An optional **Student Progress Payload** schema is defined for external consumers.
+
+### Firestore Document Schemas
+
+#### A. Learning Node Document (`/courses/{courseId}/nodes/{nodeId}`)
 ```json
 {
-  "asset_id": "why-cloudvision",
-  "name": "Why CloudVision?",
-  "type": "video",
-  "version": 1,
-  "is_latest": true,
-  "attributes": {
-    "duration": 15,
-    "prerequisite": "network-foundations-101",
-    "difficulty_level": 2.5,
-    "skill_tags": ["NetOps", "CV"],
-    "last_updated": "2026-08-01",
-    "comments": "Core introductory video module",
-    "topic": "Network Automation Overview",
-    "url": "https://firebasestorage.googleapis.com/v0/b/academy-live-builder.appspot.com/o/assets%2Fwhy-cv.mp4?alt=media",
-    "gcs_uri": "gs://academy-live-builder.appspot.com/assets/why-cv.mp4"
-  }
+  "node_id": "node_bgp_01",
+  "course_id": "course_arista_advanced",
+  "module_title": "Border Gateway Protocol",
+  "lesson_order": 3,
+  "asset_id": "asset_bgp_intro_v1",
+  "is_required": true,
+  "created_at": "2026-08-01T10:00:00Z"
 }
 ```
 
-### 3.2 Collection: `curriculum_map`
-Maintains structural track hierarchies and asset sequence order.
-
+#### B. Asset Record Document (`/assets/{assetId}`)
 ```json
 {
-  "id": "cm_auto_101",
-  "track_id": "automation",
-  "track_name": "Automation",
-  "sub_track": "Automation Fundamentals",
-  "lesson": "Automation & NetOps Foundation",
-  "topic": "Network Automation Overview",
-  "asset_ref": "/assets/why-cloudvision",
-  "version": 1,
-  "is_latest": true,
-  "sorting": {
-    "track_number": 4,
-    "sub_track_number": 1,
-    "lesson_number": 1,
-    "topic_number": 1,
-    "sub_topic_number": 1
-  }
+  "asset_id": "asset_bgp_intro_v1",
+  "current_title": "EOS BGP Fundamentals & Peering",
+  "title_aliases": [
+    "Introduction to BGP",
+    "Arista BGP Setup Basics"
+  ],
+  "major_version": 1,
+  "minor_version": 2,
+  "content_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "gcs_uri": "gs://academy-media-bucket/videos/bgp_intro_v1_2.mp4",
+  "duration_seconds": 845,
+  "last_updated": "2026-08-06T08:30:00Z",
+  "status": "ACTIVE"
 }
 ```
 
-### 3.3 Collection: `cms_history`
-Audit and database checkpoint history for system rollbacks.
-
+#### C. Version History Sub-collection (`/assets/{assetId}/history/{versionId}`)
 ```json
 {
-  "id": "chk_20260806_001",
-  "timestamp": "2026-08-06T08:30:00.000Z",
-  "author": "Admin User",
-  "description": "Updated CloudVision course assets and curriculum track ordering",
-  "state": {
-    "assets_count": 142,
-    "curriculum_nodes_count": 88
-  }
+  "version_id": "v1.1",
+  "major_version": 1,
+  "minor_version": 1,
+  "title_at_time": "Introduction to BGP",
+  "change_type": "MINOR_EDIT",
+  "change_description": "Trimmed audio gap at 04:12 and re-rendered 1080p stream.",
+  "gcs_uri": "gs://academy-media-bucket/archive/bgp_intro_v1_1.mp4",
+  "modified_by": "admin_user_01",
+  "timestamp": "2026-08-03T14:20:00Z"
 }
 ```
 
-### 3.4 Collection: `cache_invalidations`
-Real-time change notification collection listened to by the consumer SDK.
-
+#### D. Optional Student Progress Payload Schema (`/external_progress/{userId_nodeId}`) [OPTIONAL CONNECTION]
 ```json
 {
-  "id": "inv_992123",
-  "type": "asset_update",
-  "doc_id": "why-cloudvision",
-  "change_type": "update",
-  "timestamp": "2026-08-06T08:59:00.000Z",
-  "details": {
-    "name": "Why CloudVision?",
-    "changes": ["attributes.duration", "attributes.difficulty_level"]
-  }
+  "_note": "OPTIONAL CONNECTION - Academy Library does not manage or require student state natively.",
+  "user_id": "usr_9876",
+  "node_id": "node_bgp_01",
+  "asset_id": "asset_bgp_intro_v1",
+  "completed": true,
+  "completed_major_version": 1,
+  "completed_minor_version": 0,
+  "completed_at": "2026-08-02T11:15:00Z",
+  "watch_time_seconds": 840
 }
 ```
 
 ---
 
-## 4. API & SDK Integration Standard
+## 4. Asset Lifecycle Framework & Change Matrix
 
-The `AcademyLibrarySDK` provides standard interfaces for consuming applications:
+To bring complete clarity to content creators and external front-end systems, changes are categorized into four standard operations. Each operation triggers specific system rules governing versioning.
 
-```javascript
-const { AcademyLibrarySDK } = require('@academy/library-sdk');
-
-const sdk = new AcademyLibrarySDK({
-  apiBaseUrl: 'http://localhost:8082',
-  projectId: 'academy-live-builder'
-});
-
-// Fetch active curriculum for a track
-const curriculum = await sdk.getTrackCurriculum('automation');
-
-// Subscribe to real-time cache invalidations
-sdk.listenForInvalidations((event) => {
-  console.log(`Cache invalidated for ${event.type}: ${event.doc_id}`);
-});
-```
+| Category | Trigger Scenario | Database & Versioning Action | External Progress Impact (If Connected) |
+| :--- | :--- | :--- | :--- |
+| **Metadata Only** | Fixing typos in title, updating descriptions, or tweaking tags. Media binary untouched. | Append previous title to `title_aliases` if title changed. Version remains unchanged (e.g., `v1.2`). | Completion state unaffected. External UI can optionally display "Formerly Known As" subtitle. |
+| **Minor Edit** | Audio cleanup, fixing a minor slide typo, re-encoding video without altering core lesson content. | Increment minor version (`v1.2` $\rightarrow$ `v1.3`). Store previous media blob reference in history. | Completion state unaffected. External UI may show a blue "Updated Content" indicator. |
+| **Major Rewrite** | Significant content re-record (e.g., protocol updates, major UI overhauls in EOS). | Increment major version (`v1.3` $\rightarrow$ `v2.0`). Reset minor version to `0`. Log version transition. | External system can flag progress as "Outdated / Re-watch Suggested" based on major version discrepancy. |
+| **Replacement / Deprecation** | Topic completely replaced or deprecated in favor of a new architectural standard. | Set asset status to `ARCHIVED`. Create new asset document and update node pointer. | External system sees a new node/asset mapping and resets progress state to Unread. |
 
 ---
 
-## 5. Security & Multi-Site Governance
+## 5. UX & Metadata Resolution (Optional Progress Integration)
 
-1. **Role-Based Access Control (RBAC)**:
-   * **Read Access**: Open across all verified consumer applications (*Timeliner*, *Builder*, *Insight*).
-   * **Write/Delete Access**: Restricted strictly to authorized Curriculum Managers via Firebase Auth claims.
-2. **Referential Integrity**:
-   * `curriculum_map.asset_ref` pointers are enforced using Firestore `DocumentReference` types.
-   * Cascade checks prevent deleting active `assets` documents referenced by live curriculum nodes.
-3. **Data Loss Prevention**:
-   * All bulk ingestion scripts must generate a `cms_history` checkpoint prior to writing updates.
+Because the Academy Library does not directly maintain student records, consuming applications or optional external databases can evaluate asset metadata updates using the following decoupling patterns:
+
+1. **Optional Version Comparison Endpoint**:
+   * Academy Library exposes public metadata endpoints (`GET /api/v1/assets/{assetId}/version`).
+   * External LMS/Progress tools query the current major/minor version and determine independently if user progress needs to be flagged as updated or requiring review.
+
+2. **Title Alias Resolution**:
+   * If an asset title changes, external systems query `title_aliases` to resolve legacy course certificates or historical user watch logs without breaking user reference chains:
+     > **EOS BGP Fundamentals & Peering**  
+     > *(Formerly: Introduction to BGP)* — Resolved via Title Aliases Endpoint
+
+---
+
+## 6. Ingestion, Sync & Anti-Gravity Automation Workflows
+
+The ingestion and synchronization pipeline ensures zero manual overhead for tracking technical metadata.
+
+### Automated Upload & Sync Steps:
+1. **Signed URL Request**: The CMS admin requests a secure GCS upload URL from the Cloud Run API.
+2. **Direct Storage Upload**: Media binaries are uploaded directly from the browser/client to Google Cloud Storage, bypassing app servers.
+3. **Cloud Event Trigger**: Upon upload completion, a GCS `Finalize` event fires a Cloud Function.
+4. **Metadata Extraction & Hash Calculation**: The function computes the SHA-256 checksum, checks duration via FFmpeg, and writes technical metadata into Firestore.
+5. **Anti-Gravity Inspection**: Anti-Gravity agents inspect the upload payload, extract transcriptions for search indexing in **Academy Ask**, and verify that all static node IDs remain linked.
+
+---
+
+## 7. Future Extensibility & Operational Considerations
+
+* **Firestore Query Optimization**: Sub-collections are utilized for historical versions (`/history`) to ensure main asset queries stay lightweight and low-latency. Composite indexes are configured for `(course_id, lesson_order)`.
+* **GCS Storage Lifecycle Policies**: Configure GCS lifecycle rules to transition archived media blobs (`/archive/*`) from Standard storage to Nearline or Coldline storage after 30 days of inactivity, drastically reducing storage costs.
+* **Content Creator Guardrails**: The CMS upload form explicitly mandates selecting a change classification (Metadata Only, Minor Edit, or Major Rewrite) with mandatory changelog notes before saving updates.
+
+This architecture provides an extensible, maintainable, and high-performance blueprint for the Academy Library suite, built for long-term scalability on Google Cloud Platform.
