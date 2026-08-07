@@ -26,6 +26,7 @@ const multer = require('multer');
 const { execSync } = require('child_process');
 const { createCheckpoint, revertToCheckpoint } = require('../etl/history_manager.cjs');
 const { loadGeminiParsedData } = require('../etl/gemini_loader.cjs');
+const { syncGoogleSheets } = require('../etl/sync_sheets.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 8082;
@@ -40,7 +41,9 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
-db.settings({ ignoreUndefinedProperties: true });
+try {
+  db.settings({ ignoreUndefinedProperties: true });
+} catch (e) {}
 
 // In-Memory Cache for Assets and Curriculum Map
 class MemoryCache {
@@ -49,6 +52,17 @@ class MemoryCache {
     this.curriculumMap = [];
     this.isLoaded = false;
     this.loadPromise = null;
+
+    try {
+      db.collection('cache_invalidations').onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            console.log('[Server Cache] Invalidation event detected. Invalidating memory cache...');
+            this.isLoaded = false;
+          }
+        });
+      });
+    } catch (e) {}
   }
 
   async loadFromFirestore() {
@@ -192,15 +206,16 @@ app.get('/content', async (req, res) => {
         sub_track: doc.sub_track,
         lesson: doc.lesson,
         topic: doc.topic,
+        topic_description: doc.topic_description,
+        sub_topic_number: doc.sub_topic_number || (doc.sorting ? doc.sorting.sub_topic_number : null),
+        asset_name: doc.asset_name,
         asset: resolvedAsset,
         sorting: doc.sorting || {}
       };
     });
 
     // Structure flat items into a nested curriculum hierarchy:
-    // Sub-Track -> Lesson -> Topic -> Assets
-    
-    // Grouping structure:
+    // Sub-Track -> Lesson -> Topic -> Sub-Topics (asset_name)
     const subTracksMap = new Map();
 
     items.forEach(item => {
@@ -234,18 +249,22 @@ app.get('/content', async (req, res) => {
       if (!lessonObj.topics.has(topicName)) {
         lessonObj.topics.set(topicName, {
           name: topicName,
+          description: item.topic_description,
           sorting_number: topicSort,
-          assets: []
+          sub_topics: []
         });
       }
 
       const topicObj = lessonObj.topics.get(topicName);
-      if (item.asset) {
-        topicObj.assets.push({
-          ...item.asset,
-          sorting_number: item.sorting.sub_topic_number || 999
-        });
+      if (!topicObj.description && item.topic_description) {
+        topicObj.description = item.topic_description;
       }
+
+      topicObj.sub_topics.push({
+        sub_topic_number: item.sub_topic_number || item.sorting.sub_topic_number || 1,
+        asset_name: item.asset_name,
+        asset: item.asset
+      });
     });
 
     // Convert maps to sorted arrays
@@ -258,11 +277,26 @@ app.get('/content', async (req, res) => {
             const topics = Array.from(l.topics.values())
               .sort((a, b) => a.sorting_number - b.sorting_number)
               .map(t => {
-                // Sort assets inside topics
-                const sortedAssets = t.assets.sort((a, b) => a.sorting_number - b.sorting_number);
+                const sortedSubTopics = t.sub_topics.sort((a, b) => (a.sub_topic_number || 999) - (b.sub_topic_number || 999));
+                const assetsList = sortedSubTopics.map(st => {
+                  if (st.asset) {
+                    return { ...st.asset, sorting_number: st.sub_topic_number };
+                  }
+                  return {
+                    asset_id: slugify(st.asset_name),
+                    name: st.asset_name,
+                    type: 'video',
+                    version: 1,
+                    sorting_number: st.sub_topic_number,
+                    attributes: { duration: 0, difficulty_level: 1, skill_tags: [] }
+                  };
+                });
+
                 return {
                   topic_name: t.name,
-                  assets: sortedAssets
+                  topic_description: t.description || null,
+                  sub_topics: sortedSubTopics,
+                  assets: assetsList
                 };
               });
             return {
@@ -485,16 +519,15 @@ app.get('/api/tracks', async (req, res) => {
     await cache.ensureLoaded();
     const tracksMap = new Map();
     cache.curriculumMap.forEach(item => {
-      if (item.is_latest && item.track_id && item.track_name) {
-        tracksMap.set(item.track_id, item.track_name);
+      if (item.track_id && item.track_name) {
+        const tnum = (item.sorting && item.sorting.track_number !== undefined) ? item.sorting.track_number : (item.track_number !== undefined ? item.track_number : 999);
+        if (!tracksMap.has(item.track_id)) {
+          tracksMap.set(item.track_id, { track_id: item.track_id, track_name: item.track_name, track_number: tnum });
+        }
       }
     });
 
-    const result = Array.from(tracksMap.entries()).map(([track_id, track_name]) => ({
-      track_id,
-      track_name
-    }));
-
+    const result = Array.from(tracksMap.values()).sort((a, b) => (a.track_number || 999) - (b.track_number || 999));
     res.json(result);
   } catch (err) {
     console.error('Error fetching tracks:', err);
@@ -530,6 +563,33 @@ app.get('/api/cache-invalidations', async (req, res) => {
   } catch (err) {
     console.error('Error fetching invalidation logs:', err);
     res.status(500).json({ error: 'Failed to fetch logs', details: err.message });
+  }
+});
+
+/**
+ * POST /api/sync-sheets
+ * Automated Google Sheets API Sync Trigger
+ */
+app.post('/api/sync-sheets', async (req, res) => {
+  try {
+    console.log('Received request for Automated Google Sheets Sync...');
+    const result = await syncGoogleSheets();
+    await cache.loadFromFirestore();
+
+    res.json({
+      success: true,
+      message: 'Automated Google Sheets Sync completed successfully!',
+      assets_count: result.assets_count,
+      curriculum_count: result.curriculum_count,
+      orphaned_count: result.orphaned_count,
+      log: result.log
+    });
+  } catch (err) {
+    console.error('Error during Google Sheets sync endpoint execution:', err);
+    res.status(500).json({
+      error: 'Google Sheets API sync failed',
+      details: err.message
+    });
   }
 });
 

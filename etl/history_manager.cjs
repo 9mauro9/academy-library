@@ -11,18 +11,36 @@ const admin = require('firebase-admin');
 async function createCheckpoint(db, author, description) {
   console.log(`[History] Creating checkpoint: "${description}" by ${author}...`);
   
-  // 1. Fetch all assets
+  // 1. Fetch all assets (ultra-compact representation for <250KB checkpoint size)
   const assetsSnap = await db.collection('assets').get();
   const assets = [];
   assetsSnap.forEach(doc => {
-    assets.push({ id: doc.id, ...doc.data() });
+    const d = doc.data();
+    assets.push({
+      id: doc.id,
+      name: d.name,
+      type: d.type,
+      version: d.version,
+      is_latest: d.is_latest
+    });
   });
 
-  // 2. Fetch all curriculum maps
+  // 2. Fetch all curriculum maps (ultra-compact representation)
   const curriculumSnap = await db.collection('curriculum_map').get();
   const curriculum = [];
   curriculumSnap.forEach(doc => {
-    curriculum.push({ id: doc.id, ...doc.data() });
+    const d = doc.data();
+    const refId = d.asset_ref ? (d.asset_ref.id || (d.asset_ref._path && d.asset_ref._path.segments && d.asset_ref._path.segments.slice(-1)[0])) : null;
+    curriculum.push({
+      id: doc.id,
+      track_id: d.track_id,
+      sub_track: d.sub_track,
+      lesson: d.lesson,
+      topic: d.topic,
+      sub_topic_number: d.sub_topic_number,
+      asset_name: d.asset_name,
+      asset_ref_id: refId
+    });
   });
 
   const commitId = `commit_${Date.now()}`;
@@ -113,7 +131,10 @@ async function revertToCheckpoint(db, commitId) {
     const { id, ...data } = map;
     
     // Resolve Firestore reference object if present
-    if (data.asset_ref && typeof data.asset_ref === 'string') {
+    if (data.asset_ref_id) {
+      data.asset_ref = db.collection('assets').doc(data.asset_ref_id);
+      delete data.asset_ref_id;
+    } else if (data.asset_ref && typeof data.asset_ref === 'string') {
       // Re-compile path string into a DocumentReference if stored as raw path
       data.asset_ref = db.doc(data.asset_ref);
     } else if (data.asset_ref && data.asset_ref._path) {

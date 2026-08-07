@@ -60,7 +60,7 @@
           <div class="stat-card">
             <div class="stat-icon">🎬</div>
             <div class="stat-info">
-              <span class="stat-label">Total Assets</span>
+              <span class="stat-label">Total Assets Ingested</span>
               <span class="stat-value" id="stat-assets-count">-</span>
             </div>
           </div>
@@ -82,84 +82,134 @@
           </div>
         </div>
 
-        <!-- Invalidation events preview card -->
-        <div class="panel-card" style="margin-top: 24px;">
-          <div class="panel-header">
-            <h3>Recent Invalidation Telemetry</h3>
-            <button class="action-btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="app.switchToTab('logs')">View All Stream Logs →</button>
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 24px;">
+          <!-- Invalidation events preview card -->
+          <div class="panel-card" style="margin-top: 0;">
+            <div class="panel-header">
+              <h3>Recent Invalidation Telemetry</h3>
+              <button class="action-btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="app.switchToTab('logs')">View All Stream Logs →</button>
+            </div>
+            <ul class="invalidation-preview-list" id="invalidation-preview-list">
+              <li class="loading-placeholder">Loading live invalidation telemetry...</li>
+            </ul>
           </div>
-          <ul class="invalidation-preview-list" id="invalidation-preview-list">
-            <li class="loading-placeholder">Loading live invalidation telemetry...</li>
-          </ul>
+
+          <!-- Quick Actions panel -->
+          <div class="panel-card" style="margin-top: 0;">
+            <h3>Quick Actions</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+              <button class="action-btn" style="padding: 12px; justify-content: flex-start; gap: 10px; font-size: 0.85rem;" onclick="app.switchToTab('assets'); app.showAddAssetModal();">
+                <span>＋</span> Add New Content Asset
+              </button>
+              <button class="action-btn" style="padding: 12px; justify-content: flex-start; gap: 10px; font-size: 0.85rem; background: rgba(99, 102, 241, 0.1); border-color: var(--accent-cyan);" onclick="app.switchToTab('ingestion'); app.handleSheetsSync();">
+                <span>⚡</span> Sync Google Sheets
+              </button>
+              <button class="action-btn" style="padding: 12px; justify-content: flex-start; gap: 10px; font-size: 0.85rem;" onclick="app.switchToTab('tracks');">
+                <span>🔍</span> Browse Curriculum Paths
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- DATA INGESTION TAB -->
       <section id="ingestion" class="content-tab">
         <div class="tab-header">
-          <h1>Data Ingestion & Synchronization</h1>
-          <p>Upload Excel master files to generate Firestore documents, maintain referential integrity, and trigger invalidation events.</p>
+          <h1>Data Ingestion & Automated Google Sheets Sync</h1>
+          <p>Direct API synchronization from Google Sheets master sources to Cloud Firestore with real-time telemetry, zero-duplicate bulk upserting, and automatic cache invalidation.</p>
         </div>
 
-        <!-- Ingestion Mode Selector Tabs -->
-        <div class="ingest-mode-selector" style="display: flex; gap: 12px; margin-bottom: 24px;">
-          <button class="action-btn active" id="btn-ingest-standard" onclick="app.setIngestType('standard')" style="flex: 1; padding: 12px;">
-            📄 Standard Excel Master Sheets
-          </button>
-          <button class="action-btn" id="btn-ingest-ai" onclick="app.setIngestType('ai')" style="flex: 1; padding: 12px; background: rgba(99, 102, 241, 0.1); border-color: var(--accent-cyan);">
-            ✨ Gemini AI Unstructured Sheet Extractor
-          </button>
+        <!-- Google Sheets API Direct Sources Card -->
+        <div class="panel-card" style="margin-bottom: 24px;">
+          <div class="panel-header" style="margin-bottom: 16px;">
+            <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+              <span>🌐</span> Direct API Data Sources (Google Sheets)
+            </h3>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Google Sheets API v4</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+            <!-- Source 1: Master Assets -->
+            <div style="background: var(--bg-tertiary, rgba(255,255,255,0.03)); border: 1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">🎬 Academy Master Assets</span>
+                <span style="font-size: 0.75rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 4px;">Live Sheet</span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; word-break: break-all;">
+                <a href="https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; text-decoration: none;">
+                  https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww...
+                </a>
+              </p>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
+                ID: 1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww
+              </div>
+            </div>
+
+            <!-- Source 2: Master Learning Paths -->
+            <div style="background: var(--bg-tertiary, rgba(255,255,255,0.03)); border: 1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">🌿 Academy Master Learning Paths</span>
+                <span style="font-size: 0.75rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 4px;">Live Sheet</span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; word-break: break-all;">
+                <a href="https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; text-decoration: none;">
+                  https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988...
+                </a>
+              </p>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
+                ID: 1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988
+              </div>
+            </div>
+          </div>
         </div>
 
+        <!-- Automated Sync Trigger & Status Panel -->
         <div class="panel-card">
-          <!-- Standard Form -->
-          <form id="ingest-form" style="display: flex; flex-direction: column; gap: 24px;">
-            <div class="ingestion-grid">
-              <div class="dropzone" id="cms-dropzone">
-                <div class="dropzone-icon">📊</div>
-                <div class="dropzone-text">CMS Master File</div>
-                <div class="dropzone-sub">Academy CMS Master 1.xlsx</div>
-                <div class="file-selected-name" id="cms-file-name">No file selected</div>
-                <input type="file" id="cms-input" accept=".xlsx,.csv" style="display: none;">
-              </div>
-
-              <div class="dropzone" id="track-dropzone">
-                <div class="dropzone-icon">🌿</div>
-                <div class="dropzone-text">Track Master File</div>
-                <div class="dropzone-sub">Academy Track Master 1.xlsx</div>
-                <div class="file-selected-name" id="track-file-name">No file selected</div>
-                <input type="file" id="track-input" accept=".xlsx,.csv" style="display: none;">
-              </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">Automated Sync Trigger</h3>
+              <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                Triggers backend Google Sheets API extraction, validates asset references, creates a pre-sync database checkpoint, and performs a bulk upsert into Firestore.
+              </p>
             </div>
 
-            <div class="form-actions" style="display: flex; justify-content: flex-end;">
-              <button type="submit" class="submit-btn" id="ingest-submit-btn">
-                🚀 Run Full Ingestion & Sync
-              </button>
-            </div>
-          </form>
+            <button id="btn-sync-sheets" class="submit-btn" onclick="app.handleSheetsSync()" style="background: var(--grad-cyan-blue, linear-gradient(135deg, #06b6d4, #6366f1)); font-size: 1rem; padding: 12px 24px; display: flex; align-items: center; gap: 8px;">
+              <span id="sync-btn-icon">⚡</span>
+              <span id="sync-btn-text">Sync Database</span>
+            </button>
+          </div>
 
-          <!-- Gemini AI Form -->
-          <form id="ai-ingest-form" style="display: none; flex-direction: column; gap: 24px;">
-            <div class="dropzone" id="custom-dropzone" style="border-style: dashed; border-color: var(--accent-cyan);">
-              <div class="dropzone-icon">✨</div>
-              <div class="dropzone-text">Upload Custom Unstructured Spreadsheet</div>
-              <div class="dropzone-sub">Upload any custom Excel (.xlsx) file to parse layout and ingest automatically using Gemini 2.5 Flash</div>
-              <div class="file-selected-name" id="custom-file-name">No custom file selected</div>
-              <input type="file" id="custom-input" accept=".xlsx,.csv" style="display: none;">
+          <!-- Real-Time Status Progress Banner -->
+          <div id="sync-status-banner" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="sync-status-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; display: inline-block;"></span>
+              <span id="sync-status-text" style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary);">Status: Ready for Google Sheets synchronization</span>
+            </div>
+            <span id="sync-status-badge" class="badge" style="font-size: 0.75rem;">Idle</span>
+          </div>
+
+          <!-- Records Processed Summary Grid -->
+          <div id="sync-summary-card" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="background: var(--bg-secondary, rgba(255,255,255,0.02)); border: 1px solid var(--border-color, rgba(255,255,255,0.06)); border-radius: 8px; padding: 12px; text-align: center;">
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Assets Upserted</div>
+              <div id="sync-stat-assets" style="font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin-top: 2px;">-</div>
             </div>
 
-            <div class="form-actions" style="display: flex; justify-content: flex-end;">
-              <button type="submit" class="submit-btn" id="ai-submit-btn" style="background: var(--grad-cyan-blue);">
-                ✨ Extract & Ingest via Gemini AI
-              </button>
+            <div style="background: var(--bg-secondary, rgba(255,255,255,0.02)); border: 1px solid var(--border-color, rgba(255,255,255,0.06)); border-radius: 8px; padding: 12px; text-align: center;">
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Curriculum Nodes</div>
+              <div id="sync-stat-curriculum" style="font-size: 1.25rem; font-weight: 700; color: #818cf8; margin-top: 2px;">-</div>
             </div>
-          </form>
+
+            <div style="background: var(--bg-secondary, rgba(255,255,255,0.02)); border: 1px solid var(--border-color, rgba(255,255,255,0.06)); border-radius: 8px; padding: 12px; text-align: center;">
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Orphan References</div>
+              <div id="sync-stat-orphans" style="font-size: 1.25rem; font-weight: 700; color: #f59e0b; margin-top: 2px;">-</div>
+            </div>
+          </div>
         </div>
 
         <div class="panel-card" style="margin-top: 24px;">
           <h3>Ingestion Console Output</h3>
-          <div class="console-box" id="console-output">Ready for ingestion command. Select master files above to begin.</div>
+          <div class="console-box" id="console-output">Ready for Google Sheets synchronization command. Click "Sync Database" above to execute.</div>
         </div>
       </section>
 

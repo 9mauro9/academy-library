@@ -8,6 +8,16 @@ This document outlines the visual system architecture, processing flows, caching
 
 ```mermaid
 graph TD
+    subgraph Data Sources
+        GS1[Google Sheets: Master Assets]
+        GS2[Google Sheets: Master Learning Paths]
+    end
+
+    subgraph Ingestion & ETL Engine
+        SYNC[Automated Sync Engine: sync_sheets.cjs / API]
+        GS_API[Google Sheets API v4: sheets.googleapis.com]
+    end
+
     subgraph Client Applications
         TL[Academy Timeliner]
         BL[Academy Builder]
@@ -16,13 +26,20 @@ graph TD
     end
 
     subgraph Firebase Shared Backend (academy-live-builder)
-        FS[(Firestore assets & media_catalog)]
+        FS[(Firestore assets, curriculum_map, cms_history)]
         ST[(Cloud Storage for Docs & Media)]
         CF[Cloud Functions - Indexer & Processing]
     end
 
-    LIB -->|Upload & Manage Assets| ST
-    LIB -->|Write Metadata & Tags| FS
+    GS1 --> GS_API
+    GS2 --> GS_API
+    GS_API --> SYNC
+    SYNC -->|1. Pre-Sync Checkpoint| FS
+    SYNC -->|2. Bulk Upsert Metadata| FS
+    SYNC -->|3. Log Invalidation Event| FS
+
+    LIB -->|Trigger Automated Sync| SYNC
+    LIB -->|Manage Assets| FS
     CF -->|Extract Metadata & Embeddings| FS
     
     TL -->|Fetch Asset Metadata| FS

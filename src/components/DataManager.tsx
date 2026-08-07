@@ -89,6 +89,40 @@ export const DataManager: React.FC = () => {
     }
   };
 
+  const handleAutomatedSheetsSync = async () => {
+    setLoading(true);
+    setMessage({ type: '', text: 'Fetching data from Google Sheets API...' });
+
+    try {
+      const apiBaseUrl = (window.location.protocol === 'file:' || !window.location.port || window.location.port !== '8082')
+        ? 'http://localhost:8082'
+        : '';
+      const resp = await fetch(`${apiBaseUrl}/api/sync-sheets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await resp.json();
+
+      if (resp.ok && data.success) {
+        setMessage({
+          type: 'success',
+          text: `Sync Complete! Upserted ${data.assets_count} Assets and ${data.curriculum_count} Curriculum Nodes from Google Sheets API (Orphans: ${data.orphaned_count}).`
+        });
+        fetchExistingTopics();
+      } else {
+        throw new Error(data.details || data.error || 'Automated sync failed.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({
+        type: 'error',
+        text: `Automated Sync Error: ${err.message}`
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFetchFromUrl = async () => {
     if (!sheetUrl.trim()) return;
     setLoading(true);
@@ -177,6 +211,28 @@ export const DataManager: React.FC = () => {
           <span style={{ fontSize: '0.85rem' }}>{message.text}</span>
         </div>
       )}
+
+      {/* Automated Direct API Sync */}
+      <div className="view-card" style={{ padding: '1.25rem', gap: '1rem', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', margin: 0 }}>
+            <RefreshCw size={18} className="text-secondary" />
+            <span>Automated Google Sheets API Sync</span>
+          </h3>
+          <button
+            onClick={handleAutomatedSheetsSync}
+            className="btn-action btn-primary"
+            disabled={loading}
+            style={{ padding: '0.5rem 1rem' }}
+          >
+            <RefreshCw size={14} className={loading ? 'spin' : ''} />
+            <span>{loading ? 'Syncing...' : 'Sync Database'}</span>
+          </button>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+          Directly fetches and upserts metadata from official Google Sheets master sources (Master Assets & Master Learning Paths) into Cloud Firestore.
+        </p>
+      </div>
 
       {/* Option 1: URL fetch */}
       <div className="view-card" style={{ padding: '1.25rem', gap: '1rem' }}>
