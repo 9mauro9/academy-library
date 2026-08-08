@@ -35,77 +35,87 @@ const db = getFirestore();
 console.log('Starting Local Firestore Triggers Simulator...');
 console.log('Listening to collection modifications to automatically trigger cache invalidation events...');
 
-let isAssetsInitialSnapshot = true;
-let isCurriculumInitialSnapshot = true;
-
-// 1. Listen to assets collection changes
-db.collection('assets').onSnapshot(snapshot => {
-  if (isAssetsInitialSnapshot) {
-    isAssetsInitialSnapshot = false;
-    console.log(`[Simulator] Initialized assets snapshot (${snapshot.size} docs loaded)`);
-    return;
-  }
-
-  snapshot.docChanges().forEach(async change => {
-    // Only trigger on actual updates (modifications)
-    if (change.type === 'modified') {
-      const assetId = change.doc.id;
-      const data = change.doc.data();
-      console.log(`[Simulator EVENT] Asset updated: ${assetId} ("${data.name}")`);
-
-      try {
-        const invDoc = {
-          type: 'asset_update',
-          doc_id: assetId,
-          timestamp: FieldValue.serverTimestamp(),
-          details: {
-            name: data.name,
-            version: data.version
-          }
-        };
-        await db.collection('cache_invalidations').add(invDoc);
-        console.log(`[Simulator EVENT] Logged cache invalidation for asset: ${assetId}`);
-      } catch (err) {
-        console.error('[Simulator ERROR] Failed to write cache invalidation:', err);
-      }
+// 1. Listen to assets collection changes with auto-reconnect
+function listenAssets() {
+  let isAssetsInitialSnapshot = true;
+  const unsubscribe = db.collection('assets').onSnapshot(snapshot => {
+    if (isAssetsInitialSnapshot) {
+      isAssetsInitialSnapshot = false;
+      console.log(`[Simulator] Initialized assets snapshot (${snapshot.size} docs loaded)`);
+      return;
     }
-  });
-}, err => {
-  console.error('[Simulator ERROR] Assets listener error:', err);
-});
 
-// 2. Listen to curriculum_map collection changes
-db.collection('curriculum_map').onSnapshot(snapshot => {
-  if (isCurriculumInitialSnapshot) {
-    isCurriculumInitialSnapshot = false;
-    console.log(`[Simulator] Initialized curriculum_map snapshot (${snapshot.size} docs loaded)`);
-    return;
-  }
+    snapshot.docChanges().forEach(async change => {
+      if (change.type === 'modified') {
+        const assetId = change.doc.id;
+        const data = change.doc.data();
+        console.log(`[Simulator EVENT] Asset updated: ${assetId} ("${data.name}")`);
 
-  snapshot.docChanges().forEach(async change => {
-    // Trigger on any writes (create, modify, delete)
-    if (change.type === 'modified' || change.type === 'added' || change.type === 'removed') {
-      const mapId = change.doc.id;
-      const data = change.doc.data();
-      console.log(`[Simulator EVENT] Curriculum map entry ${change.type}: ${mapId}`);
-
-      try {
-        const invDoc = {
-          type: 'curriculum_write',
-          doc_id: mapId,
-          change_type: change.type,
-          timestamp: FieldValue.serverTimestamp(),
-          details: {
-            track_id: data.track_id
-          }
-        };
-        await db.collection('cache_invalidations').add(invDoc);
-        console.log(`[Simulator EVENT] Logged cache invalidation for curriculum entry: ${mapId}`);
-      } catch (err) {
-        console.error('[Simulator ERROR] Failed to write cache invalidation:', err);
+        try {
+          const invDoc = {
+            type: 'asset_update',
+            doc_id: assetId,
+            timestamp: FieldValue.serverTimestamp(),
+            details: {
+              name: data.name,
+              version: data.version
+            }
+          };
+          await db.collection('cache_invalidations').add(invDoc);
+          console.log(`[Simulator EVENT] Logged cache invalidation for asset: ${assetId}`);
+        } catch (err) {
+          console.error('[Simulator ERROR] Failed to write cache invalidation:', err);
+        }
       }
-    }
+    });
+  }, err => {
+    console.error('[Simulator ERROR] Assets listener error:', err.message);
+    try { unsubscribe(); } catch (e) {}
+    console.log('[Simulator] Re-establishing assets listener in 5 seconds...');
+    setTimeout(listenAssets, 5000);
   });
-}, err => {
-  console.error('[Simulator ERROR] Curriculum listener error:', err);
-});
+}
+
+// 2. Listen to curriculum_map collection changes with auto-reconnect
+function listenCurriculum() {
+  let isCurriculumInitialSnapshot = true;
+  const unsubscribe = db.collection('curriculum_map').onSnapshot(snapshot => {
+    if (isCurriculumInitialSnapshot) {
+      isCurriculumInitialSnapshot = false;
+      console.log(`[Simulator] Initialized curriculum_map snapshot (${snapshot.size} docs loaded)`);
+      return;
+    }
+
+    snapshot.docChanges().forEach(async change => {
+      if (change.type === 'modified' || change.type === 'added' || change.type === 'removed') {
+        const mapId = change.doc.id;
+        const data = change.doc.data();
+        console.log(`[Simulator EVENT] Curriculum map entry ${change.type}: ${mapId}`);
+
+        try {
+          const invDoc = {
+            type: 'curriculum_write',
+            doc_id: mapId,
+            change_type: change.type,
+            timestamp: FieldValue.serverTimestamp(),
+            details: {
+              track_id: data.track_id
+            }
+          };
+          await db.collection('cache_invalidations').add(invDoc);
+          console.log(`[Simulator EVENT] Logged cache invalidation for curriculum entry: ${mapId}`);
+        } catch (err) {
+          console.error('[Simulator ERROR] Failed to write cache invalidation:', err);
+        }
+      }
+    });
+  }, err => {
+    console.error('[Simulator ERROR] Curriculum listener error:', err.message);
+    try { unsubscribe(); } catch (e) {}
+    console.log('[Simulator] Re-establishing curriculum listener in 5 seconds...');
+    setTimeout(listenCurriculum, 5000);
+  });
+}
+
+listenAssets();
+listenCurriculum();
