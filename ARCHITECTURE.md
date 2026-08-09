@@ -26,9 +26,10 @@ graph TD
     end
 
     subgraph Firebase Shared Backend (academy-live-builder)
-        FS[(Firestore assets, curriculum_map, cms_history)]
-        ST[(Cloud Storage for Docs & Media)]
+        FS[(Firestore assets, curriculum_map, courses, cache_invalidations, cms_history)]
+        ST[(Cloud Storage gs://academy-content-bucket)]
         CF[Cloud Functions - Indexer & Processing]
+        EXT[(Optional external_progress LMS)]
     end
 
     GS1 --> GS_API
@@ -53,6 +54,7 @@ graph TD
 
 `Academy Library` operates as the central metadata backbone within the **academy-live-builder** multi-site project:
 
-* **Central Firestore**: All assets are indexed in `assets` and `media_catalog` collections.
+* **Central Firestore**: All assets are indexed in `assets`, `curriculum_map`, `courses`, `cache_invalidations`, and `cms_history` collections, with decoupled optional integration for `external_progress`.
+* **Hierarchical Hybrid Storage**: Media assets are organized in `gs://academy-content-bucket/` following domain-first taxonomy (`curriculum/videos/`, `curriculum/diagrams/`, `curriculum/documents/`, `marketing/documents/`, `marketing/media/`, `platform/exports/`).
 * **Unified Security Rules**: Enforces role-based read/write access across all four applications.
 * **Instant Asset Retrieval**: Edge-cached metadata delivery for fast load times across all client portals.

@@ -27,6 +27,7 @@ const { execSync } = require('child_process');
 const { createCheckpoint, revertToCheckpoint } = require('../etl/history_manager.cjs');
 const { loadGeminiParsedData } = require('../etl/gemini_loader.cjs');
 const { syncGoogleSheets } = require('../etl/sync_sheets.cjs');
+const { validateTaxonomyPath, inferTaxonomy, PRIMARY_BUCKET } = require('./taxonomy.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 8082;
@@ -52,17 +53,6 @@ class MemoryCache {
     this.curriculumMap = [];
     this.isLoaded = false;
     this.loadPromise = null;
-
-    try {
-      db.collection('cache_invalidations').onSnapshot(snap => {
-        snap.docChanges().forEach(change => {
-          if (change.type === 'added' || change.type === 'modified') {
-            console.log('[Server Cache] Invalidation event detected. Invalidating memory cache...');
-            this.isLoaded = false;
-          }
-        });
-      });
-    } catch (e) {}
   }
 
   async loadFromFirestore() {
@@ -73,9 +63,20 @@ class MemoryCache {
       const assetsSnap = await db.collection('assets').orderBy('name').get();
       const assets = [];
       assetsSnap.forEach(doc => {
+        const data = doc.data();
+        const taxonomy = inferTaxonomy(data.gcs_uri, data.type, data.name || data.current_title);
         assets.push({
           asset_id: doc.id,
-          ...doc.data()
+          current_title: data.current_title || data.name || doc.id,
+          title_aliases: data.title_aliases || [],
+          major_version: data.major_version || 1,
+          minor_version: data.minor_version || 0,
+          content_hash: data.content_hash || (data.attributes && data.attributes.content_hash) || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          gcs_uri: data.gcs_uri || taxonomy.gcs_uri,
+          domain: data.domain || taxonomy.domain,
+          asset_category: data.asset_category || taxonomy.asset_category,
+          status: data.status || 'ACTIVE',
+          ...data
         });
       });
       this.assets = assets;
@@ -341,12 +342,88 @@ app.get('/api/assets', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/assets/:assetId/version
+ * Decoupled endpoint returning asset version & storage metadata without student state
+ */
+app.get(['/api/v1/assets/:assetId/version', '/api/assets/:assetId/version'], async (req, res) => {
+  try {
+    const { assetId } = req.params;
+    await cache.ensureLoaded();
+    const asset = cache.assets.find(a => a.asset_id === assetId);
+
+    if (!asset) {
+      return res.status(404).json({ error: `Asset document "${assetId}" not found.` });
+    }
+
+    const taxonomy = inferTaxonomy(asset.gcs_uri, asset.type, asset.name || asset.current_title);
+
+    res.json({
+      asset_id: asset.asset_id,
+      current_title: asset.current_title || asset.name,
+      title_aliases: asset.title_aliases || [],
+      major_version: asset.major_version || 1,
+      minor_version: asset.minor_version || 0,
+      version: asset.version || 1,
+      content_hash: asset.content_hash || (asset.attributes && asset.attributes.content_hash) || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      gcs_uri: asset.gcs_uri || taxonomy.gcs_uri,
+      domain: asset.domain || taxonomy.domain,
+      asset_category: asset.asset_category || taxonomy.asset_category,
+      duration_seconds: (asset.attributes && asset.attributes.duration) || asset.duration_seconds || 0,
+      last_updated: (asset.attributes && asset.attributes.last_updated) || asset.last_updated || new Date().toISOString(),
+      status: asset.status || 'ACTIVE'
+    });
+  } catch (err) {
+    console.error('Error fetching asset version:', err);
+    res.status(500).json({ error: 'Failed to fetch asset version', details: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/assets/signed-url
+ * Validates destination paths against taxonomy prior to generating secure upload URL
+ */
+app.post(['/api/v1/assets/signed-url', '/api/assets/signed-url'], async (req, res) => {
+  try {
+    const { destinationPath, contentType, assetId } = req.body;
+
+    if (!destinationPath) {
+      return res.status(400).json({ error: 'Missing required parameter: destinationPath' });
+    }
+
+    const validation = validateTaxonomyPath(destinationPath);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Taxonomy validation failed',
+        details: validation.error
+      });
+    }
+
+    const fullGcsUri = validation.fullGcsUri;
+    const mockSignedUrl = `https://storage.googleapis.com/${PRIMARY_BUCKET.slice(5)}${validation.cleanPath}?GoogleAccessId=academy-sa%40academy-live-builder.iam.gserviceaccount.com&Expires=${Math.floor(Date.now() / 1000) + 3600}&Signature=mock_signature`;
+
+    res.json({
+      success: true,
+      asset_id: assetId || null,
+      destination_path: validation.cleanPath,
+      gcs_uri: fullGcsUri,
+      domain: validation.domain,
+      asset_category: validation.asset_category,
+      signed_url: mockSignedUrl,
+      expires_in: 3600
+    });
+  } catch (err) {
+    console.error('Error generating signed URL:', err);
+    res.status(500).json({ error: 'Failed to generate signed URL', details: err.message });
+  }
+});
+
+/**
  * POST /api/assets
  * Creates a new asset document
  */
 app.post('/api/assets', async (req, res) => {
   try {
-    const { name, type, version = 1, attributes = {} } = req.body;
+    const { name, type, version = 1, attributes = {}, domain, asset_category, gcs_uri, content_hash, title_aliases, current_title, major_version, minor_version, status } = req.body;
     if (!name || !type) {
       return res.status(400).json({ error: 'Missing name or type parameters' });
     }
@@ -365,10 +442,21 @@ app.post('/api/assets', async (req, res) => {
       return res.status(400).json({ error: `Asset ID "${assetId}" already exists.` });
     }
 
+    const taxonomy = inferTaxonomy(gcs_uri, type.trim(), name.trim());
+
     const assetData = {
       name: name.trim(),
+      current_title: current_title ? current_title.trim() : name.trim(),
+      title_aliases: Array.isArray(title_aliases) ? title_aliases : [],
       type: type.trim(),
+      domain: domain || taxonomy.domain,
+      asset_category: asset_category || taxonomy.asset_category,
+      gcs_uri: gcs_uri || taxonomy.gcs_uri,
+      content_hash: content_hash || (attributes && attributes.content_hash) || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      major_version: parseInt(major_version, 10) || 1,
+      minor_version: parseInt(minor_version, 10) || 0,
       version: parseInt(version, 10) || 1,
+      status: status || 'ACTIVE',
       is_latest: true,
       attributes: {
         duration: parseInt(attributes.duration, 10) || 0,
@@ -401,7 +489,7 @@ app.post('/api/assets', async (req, res) => {
 app.put('/api/assets/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, version, attributes = {} } = req.body;
+    const { name, type, version, attributes = {}, domain, asset_category, gcs_uri, content_hash, title_aliases, current_title, major_version, minor_version, status } = req.body;
 
     // Auto-create history checkpoint
     await createCheckpoint(db, 'Manual Portal', `Pre-update checkpoint for asset: "${id}"`);
@@ -413,26 +501,45 @@ app.put('/api/assets/:id', async (req, res) => {
     }
 
     const currentData = docSnap.data();
+    const taxonomy = inferTaxonomy(gcs_uri || currentData.gcs_uri, type || currentData.type, name || currentData.name || currentData.current_title);
 
-    // Prepare updated fields
+    let updatedAliases = currentData.title_aliases || [];
+    if (Array.isArray(title_aliases)) {
+      updatedAliases = title_aliases;
+    } else if (current_title && currentData.current_title && current_title !== currentData.current_title) {
+      if (!updatedAliases.includes(currentData.current_title)) {
+        updatedAliases.push(currentData.current_title);
+      }
+    }
+
     const updatedData = {
+      ...currentData,
       name: name !== undefined ? name.trim() : currentData.name,
+      current_title: current_title !== undefined ? current_title.trim() : (currentData.current_title || currentData.name),
+      title_aliases: updatedAliases,
       type: type !== undefined ? type.trim() : currentData.type,
+      domain: domain !== undefined ? domain : (currentData.domain || taxonomy.domain),
+      asset_category: asset_category !== undefined ? asset_category : (currentData.asset_category || taxonomy.asset_category),
+      gcs_uri: gcs_uri !== undefined ? gcs_uri : (currentData.gcs_uri || taxonomy.gcs_uri),
+      content_hash: content_hash !== undefined ? content_hash : (currentData.content_hash || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
+      major_version: major_version !== undefined ? parseInt(major_version, 10) : (currentData.major_version || 1),
+      minor_version: minor_version !== undefined ? parseInt(minor_version, 10) : (currentData.minor_version || 0),
       version: version !== undefined ? parseInt(version, 10) : currentData.version,
+      status: status !== undefined ? status : (currentData.status || 'ACTIVE'),
       is_latest: currentData.is_latest,
       attributes: {
         ...currentData.attributes,
-        duration: attributes.duration !== undefined ? parseInt(attributes.duration, 10) : currentData.attributes.duration,
-        prerequisite: attributes.prerequisite !== undefined ? attributes.prerequisite : currentData.attributes.prerequisite,
-        difficulty_level: attributes.difficulty_level !== undefined ? parseFloat(attributes.difficulty_level) : currentData.attributes.difficulty_level,
-        skill_tags: attributes.skill_tags !== undefined ? attributes.skill_tags : currentData.attributes.skill_tags,
-        last_updated: attributes.last_updated !== undefined ? attributes.last_updated : currentData.attributes.last_updated,
-        cvp_version: attributes.cvp_version !== undefined ? attributes.cvp_version : currentData.attributes.cvp_version,
-        eos_version: attributes.eos_version !== undefined ? attributes.eos_version : currentData.attributes.eos_version,
-        avd_version: attributes.avd_version !== undefined ? attributes.avd_version : currentData.attributes.avd_version,
-        needs_update: attributes.needs_update !== undefined ? !!attributes.needs_update : currentData.attributes.needs_update,
-        comments: attributes.comments !== undefined ? attributes.comments : currentData.attributes.comments,
-        topic: attributes.topic !== undefined ? attributes.topic : currentData.attributes.topic
+        duration: attributes.duration !== undefined ? parseInt(attributes.duration, 10) : currentData.attributes?.duration,
+        prerequisite: attributes.prerequisite !== undefined ? attributes.prerequisite : currentData.attributes?.prerequisite,
+        difficulty_level: attributes.difficulty_level !== undefined ? parseFloat(attributes.difficulty_level) : currentData.attributes?.difficulty_level,
+        skill_tags: attributes.skill_tags !== undefined ? attributes.skill_tags : currentData.attributes?.skill_tags,
+        last_updated: attributes.last_updated !== undefined ? attributes.last_updated : currentData.attributes?.last_updated,
+        cvp_version: attributes.cvp_version !== undefined ? attributes.cvp_version : currentData.attributes?.cvp_version,
+        eos_version: attributes.eos_version !== undefined ? attributes.eos_version : currentData.attributes?.eos_version,
+        avd_version: attributes.avd_version !== undefined ? attributes.avd_version : currentData.attributes?.avd_version,
+        needs_update: attributes.needs_update !== undefined ? !!attributes.needs_update : currentData.attributes?.needs_update,
+        comments: attributes.comments !== undefined ? attributes.comments : currentData.attributes?.comments,
+        topic: attributes.topic !== undefined ? attributes.topic : currentData.attributes?.topic
       }
     };
 
@@ -445,10 +552,34 @@ app.put('/api/assets/:id', async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/assets/:id
- * Deletes an asset document, nullifying any curriculum_map references to maintain integrity
- */
+app.delete('/api/assets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Auto-create history checkpoint
+    await createCheckpoint(db, 'Manual Portal', `Pre-deletion checkpoint for asset: "${id}"`);
+
+    const assetRef = db.collection('assets').doc(id);
+
+    // Find and nullify any references in curriculum_map
+    const curriculumSnap = await db.collection('curriculum_map').where('asset_ref', '==', assetRef).get();
+    if (!curriculumSnap.empty) {
+      const batch = db.batch();
+      curriculumSnap.forEach(doc => {
+        batch.update(doc.ref, { asset_ref: null });
+      });
+      await batch.commit();
+    }
+
+    await assetRef.delete();
+    await cache.loadFromFirestore();
+    res.json({ success: true, message: `Asset "${id}" deleted successfully.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put('/api/assets/:id/delete', async (req, res) => {
   // We expose delete as a PUT/delete to ensure safe invocation
   try {
@@ -753,6 +884,26 @@ app.listen(PORT, async () => {
   try {
     await cache.loadFromFirestore();
     console.log('In-memory cache warmed up successfully!');
+
+    // Initialize listener for database cache invalidation events
+    let isInitialLoad = true;
+    db.collection('cache_invalidations')
+      .orderBy('timestamp', 'desc')
+      .limit(1)
+      .onSnapshot(snapshot => {
+        if (isInitialLoad) {
+          isInitialLoad = false;
+          return;
+        }
+        if (snapshot.empty) return;
+        console.log('[Server Cache] Invalidation event detected in database. Reloading cache...');
+        cache.loadFromFirestore().catch(err => {
+          console.error('[Server Cache] Cache reload failed:', err);
+        });
+      }, err => {
+        console.error('[Server Cache] Invalidation listener error:', err);
+      });
+
   } catch (err) {
     console.warn('Warming up cache failed on startup, it will lazy-load on the first request:', err.message);
   }
