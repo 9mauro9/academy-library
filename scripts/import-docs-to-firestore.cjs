@@ -15,7 +15,7 @@ const db = getFirestore();
 
 // Bucket names
 const SOURCE_BUCKET_NAME = 'academy_content_2';
-const DEST_BUCKET_NAME = 'academy-assets-main';
+const DEST_BUCKET_NAME = 'academy-content-bucket';
 
 function slugify(text) {
   return text
@@ -52,7 +52,7 @@ async function runMigration() {
       }
 
       console.log(`\nProcessing: ${file.name}`);
-      const destPath = `assets/documents/${file.name}`;
+      const destPath = `curriculum/documents/${file.name}`;
       const destFile = destBucket.file(destPath);
 
       // Copy file to target bucket
@@ -81,17 +81,28 @@ async function runMigration() {
 
       let version = 1;
       let existingAttributes = {};
+      let existingAliases = [];
       if (docSnap.exists) {
         const existingData = docSnap.data();
         version = existingData.version || 1;
         existingAttributes = existingData.attributes || {};
+        existingAliases = existingData.title_aliases || [];
       }
 
       const assetName = file.name.replace(/\.pdf$/, '');
       const assetData = {
         name: assetName,
+        current_title: assetName,
+        title_aliases: existingAliases,
         type: 'document',
+        domain: 'curriculum',
+        asset_category: 'documents',
+        gcs_uri: `gs://${DEST_BUCKET_NAME}/${destPath}`,
+        content_hash: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        major_version: 1,
+        minor_version: 0,
         version: version,
+        status: 'ACTIVE',
         is_latest: true,
         attributes: {
           ...existingAttributes,

@@ -116,6 +116,7 @@ async function runVerification() {
   for (let i = 0; i < 5; i++) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (invalidationTriggeredCount > startTriggerCount) {
+      await new Promise(resolve => setTimeout(resolve, 500));
       break;
     }
   }

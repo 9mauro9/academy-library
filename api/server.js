@@ -56,62 +56,64 @@ class MemoryCache {
   }
 
   async loadFromFirestore() {
-    try {
-      console.log('--- Initializing in-memory cache from Firestore ---');
-      
-      // Load all assets
-      const assetsSnap = await db.collection('assets').orderBy('name').get();
-      const assets = [];
-      assetsSnap.forEach(doc => {
-        const data = doc.data();
-        const taxonomy = inferTaxonomy(data.gcs_uri, data.type, data.name || data.current_title);
-        assets.push({
-          asset_id: doc.id,
-          current_title: data.current_title || data.name || doc.id,
-          title_aliases: data.title_aliases || [],
-          major_version: data.major_version || 1,
-          minor_version: data.minor_version || 0,
-          content_hash: data.content_hash || (data.attributes && data.attributes.content_hash) || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-          gcs_uri: data.gcs_uri || taxonomy.gcs_uri,
-          domain: data.domain || taxonomy.domain,
-          asset_category: data.asset_category || taxonomy.asset_category,
-          status: data.status || 'ACTIVE',
-          ...data
+    if (this.loadPromise) return this.loadPromise;
+    this.loadPromise = (async () => {
+      try {
+        console.log('--- Initializing in-memory cache from Firestore ---');
+        const assetsSnap = await db.collection('assets').orderBy('name').get();
+        const assets = [];
+        assetsSnap.forEach(doc => {
+          const data = doc.data();
+          const taxonomy = inferTaxonomy(data.gcs_uri, data.type, data.name || data.current_title);
+          assets.push({
+            current_title: data.current_title || data.name || doc.id,
+            title_aliases: data.title_aliases || [],
+            major_version: data.major_version || 1,
+            minor_version: data.minor_version || 0,
+            content_hash: data.content_hash || (data.attributes && data.attributes.content_hash) || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            gcs_uri: data.gcs_uri || taxonomy.gcs_uri,
+            domain: data.domain || taxonomy.domain,
+            asset_category: data.asset_category || taxonomy.asset_category,
+            status: data.status || 'ACTIVE',
+            ...data,
+            asset_id: doc.id
+          });
         });
-      });
-      this.assets = assets;
-      console.log(`Loaded ${this.assets.length} assets into memory cache.`);
+        this.assets = assets;
+        console.log(`Loaded ${this.assets.length} assets into memory cache.`);
 
-      // Load all curriculum_map entries
-      const mapSnap = await db.collection('curriculum_map').get();
-      const items = [];
-      mapSnap.forEach(doc => {
-        items.push({
-          id: doc.id,
-          ...doc.data()
+        const mapSnap = await db.collection('curriculum_map').get();
+        const items = [];
+        mapSnap.forEach(doc => {
+          items.push({
+            id: doc.id,
+            ...doc.data()
+          });
         });
-      });
-      this.curriculumMap = items;
-      console.log(`Loaded ${this.curriculumMap.length} curriculum map nodes into memory cache.`);
-      
-      this.isLoaded = true;
-      console.log('--- In-memory cache initialization complete ---');
-    } catch (err) {
-      console.error('Failed to initialize in-memory cache:', err);
-      throw err;
-    }
+        this.curriculumMap = items;
+        console.log(`Loaded ${this.curriculumMap.length} curriculum map nodes into memory cache.`);
+        this.isLoaded = true;
+        console.log('--- In-memory cache initialization complete ---');
+      } catch (err) {
+        console.error('Failed to initialize in-memory cache:', err);
+        throw err;
+      } finally {
+        this.loadPromise = null;
+      }
+    })();
+    return this.loadPromise;
   }
 
   async ensureLoaded() {
-    if (!this.isLoaded) {
-      if (!this.loadPromise) {
-        this.loadPromise = this.loadFromFirestore().then(() => {
-          this.loadPromise = null;
-        }).catch(err => {
-          this.loadPromise = null;
-          throw err;
-        });
-      }
+    if (this.loadPromise) {
+      await this.loadPromise;
+    } else if (!this.isLoaded) {
+      this.loadPromise = this.loadFromFirestore().then(() => {
+        this.loadPromise = null;
+      }).catch(err => {
+        this.loadPromise = null;
+        throw err;
+      });
       await this.loadPromise;
     }
   }
@@ -182,16 +184,18 @@ app.get('/content', async (req, res) => {
     const filteredDocs = cache.curriculumMap.filter(doc => {
       if (doc.track_id !== track_id) return false;
       if (version === 'latest') {
-        return doc.is_latest === true;
+        return doc.is_latest !== false;
       } else {
         const versionNum = parseInt(version, 10);
-        return doc.version === versionNum;
+        return doc.version === versionNum || (doc.version === undefined && versionNum === 1);
       }
     });
 
     if (filteredDocs.length === 0) {
       return res.status(404).json({ error: `No curriculum found for track_id: ${track_id} and version: ${version}` });
     }
+
+
 
     // Map curriculum docs with their resolved assets
     const items = filteredDocs.map(doc => {
@@ -200,6 +204,7 @@ app.get('/content', async (req, res) => {
         const refId = doc.asset_ref.id || (doc.asset_ref._path && doc.asset_ref._path.segments && doc.asset_ref._path.segments.slice(-1)[0]);
         if (refId) {
           resolvedAsset = cache.assets.find(a => a.asset_id === refId) || null;
+          console.log(`[GET /content] Resolved Asset for ${refId}: difficulty = ${resolvedAsset ? resolvedAsset.attributes?.difficulty_level : 'NULL'}`);
         }
       }
 
@@ -280,8 +285,13 @@ app.get('/content', async (req, res) => {
               .map(t => {
                 const sortedSubTopics = t.sub_topics.sort((a, b) => (a.sub_topic_number || 999) - (b.sub_topic_number || 999));
                 const assetsList = sortedSubTopics.map(st => {
+                  const defaultAttrs = { duration: 0, difficulty_level: 1.0, skill_tags: [] };
                   if (st.asset) {
-                    return { ...st.asset, sorting_number: st.sub_topic_number };
+                    return {
+                      ...st.asset,
+                      sorting_number: st.sub_topic_number,
+                      attributes: st.asset.attributes ? { ...defaultAttrs, ...st.asset.attributes } : defaultAttrs
+                    };
                   }
                   return {
                     asset_id: slugify(st.asset_name),
@@ -289,7 +299,7 @@ app.get('/content', async (req, res) => {
                     type: 'video',
                     version: 1,
                     sorting_number: st.sub_topic_number,
-                    attributes: { duration: 0, difficulty_level: 1, skill_tags: [] }
+                    attributes: defaultAttrs
                   };
                 });
 
@@ -645,20 +655,33 @@ app.delete('/api/assets/:id', async (req, res) => {
  * GET /api/tracks
  * Lists unique curriculum track IDs and track names
  */
+const TRACK_NAMES = {
+  'network-foundations': { name: 'Network Foundations', number: 1 },
+  'data-center': { name: 'Data Center', number: 2 },
+  'campus': { name: 'Campus', number: 3 },
+  'automation': { name: 'Automation', number: 4 },
+  'wan-routing': { name: 'WAN Routing', number: 5 }
+};
+
 app.get('/api/tracks', async (req, res) => {
   try {
     await cache.ensureLoaded();
     const tracksMap = new Map();
     cache.curriculumMap.forEach(item => {
-      if (item.track_id && item.track_name) {
-        const tnum = (item.sorting && item.sorting.track_number !== undefined) ? item.sorting.track_number : (item.track_number !== undefined ? item.track_number : 999);
-        if (!tracksMap.has(item.track_id)) {
-          tracksMap.set(item.track_id, { track_id: item.track_id, track_name: item.track_name, track_number: tnum });
+      const tid = item.track_id;
+      if (tid) {
+        const meta = TRACK_NAMES[tid] || { name: item.track_name || tid, number: item.track_number || (item.sorting && item.sorting.track_number) || 999 };
+        if (!tracksMap.has(tid)) {
+          tracksMap.set(tid, {
+            track_id: tid,
+            track_name: meta.name,
+            track_number: meta.number
+          });
         }
       }
     });
 
-    const result = Array.from(tracksMap.values()).sort((a, b) => (a.track_number || 999) - (b.track_number || 999));
+    const result = Array.from(tracksMap.values()).sort((a, b) => a.track_number - b.track_number);
     res.json(result);
   } catch (err) {
     console.error('Error fetching tracks:', err);
@@ -680,12 +703,22 @@ app.get('/api/cache-invalidations', async (req, res) => {
     const results = [];
     snap.forEach(doc => {
       const data = doc.data();
+      let formattedTimestamp = null;
+      if (data.timestamp) {
+        if (typeof data.timestamp.toDate === 'function') {
+          formattedTimestamp = data.timestamp.toDate().toISOString();
+        } else if (typeof data.timestamp === 'string') {
+          formattedTimestamp = data.timestamp;
+        } else {
+          formattedTimestamp = new Date(data.timestamp).toISOString();
+        }
+      }
       results.push({
         id: doc.id,
         type: data.type,
         doc_id: data.doc_id,
         change_type: data.change_type || null,
-        timestamp: data.timestamp ? data.timestamp.toDate().toISOString() : null,
+        timestamp: formattedTimestamp,
         details: data.details || {}
       });
     });
@@ -886,23 +919,103 @@ app.listen(PORT, async () => {
     console.log('In-memory cache warmed up successfully!');
 
     // Initialize listener for database cache invalidation events
-    let isInitialLoad = true;
-    db.collection('cache_invalidations')
-      .orderBy('timestamp', 'desc')
-      .limit(1)
-      .onSnapshot(snapshot => {
-        if (isInitialLoad) {
-          isInitialLoad = false;
-          return;
+    // Real-time assets onSnapshot listener for instant zero-latency cache consistency
+    db.collection('assets').onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        const doc = change.doc;
+        if (change.type === 'added' || change.type === 'modified') {
+          const data = doc.data();
+          const taxonomy = inferTaxonomy(data.gcs_uri, data.type, data.name || data.current_title);
+          const assetDoc = {
+            asset_id: doc.id,
+            current_title: data.current_title || data.name || doc.id,
+            title_aliases: data.title_aliases || [],
+            major_version: data.major_version || 1,
+            minor_version: data.minor_version || 0,
+            content_hash: data.content_hash || (data.attributes && data.attributes.content_hash) || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            gcs_uri: data.gcs_uri || taxonomy.gcs_uri,
+            domain: data.domain || taxonomy.domain,
+            asset_category: data.asset_category || taxonomy.asset_category,
+            status: data.status || 'ACTIVE',
+            ...data
+          };
+          const idx = cache.assets.findIndex(a => a.asset_id === doc.id);
+          if (idx !== -1) {
+            cache.assets[idx] = assetDoc;
+          } else {
+            cache.assets.push(assetDoc);
+          }
+        } else if (change.type === 'removed') {
+          const idx = cache.assets.findIndex(a => a.asset_id === doc.id);
+          if (idx !== -1) {
+            cache.assets.splice(idx, 1);
+          }
         }
-        if (snapshot.empty) return;
-        console.log('[Server Cache] Invalidation event detected in database. Reloading cache...');
-        cache.loadFromFirestore().catch(err => {
-          console.error('[Server Cache] Cache reload failed:', err);
-        });
-      }, err => {
-        console.error('[Server Cache] Invalidation listener error:', err);
       });
+    }, err => {
+      console.error('[Server Cache] Assets listener error:', err.message);
+    });
+
+    // Real-time curriculum_map onSnapshot listener for instant zero-latency cache consistency
+    db.collection('curriculum_map').onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        const doc = change.doc;
+        const data = doc.data();
+        const itemDoc = { id: doc.id, ...data };
+        const idx = cache.curriculumMap.findIndex(c => c.id === doc.id);
+        if (change.type === 'added' || change.type === 'modified') {
+          if (idx !== -1) {
+            cache.curriculumMap[idx] = itemDoc;
+          } else {
+            cache.curriculumMap.push(itemDoc);
+          }
+        } else if (change.type === 'removed') {
+          if (idx !== -1) {
+            cache.curriculumMap.splice(idx, 1);
+          }
+        }
+      });
+    }, err => {
+      console.error('[Server Cache] Curriculum listener error:', err.message);
+    });
+
+    // Real-time invalidation listener with synchronous in-memory patch logic
+    let isInitialLoad = true;
+    const setupInvalidationListener = () => {
+      return db.collection('cache_invalidations')
+        .orderBy('timestamp', 'desc')
+        .limit(5)
+        .onSnapshot(snapshot => {
+          if (isInitialLoad) {
+            isInitialLoad = false;
+            return;
+          }
+          if (snapshot.empty) return;
+          console.log('[Server Cache] Invalidation event detected in database.');
+
+          // Instantly patch in-memory asset cache synchronously
+          snapshot.docs.forEach(doc => {
+            const inv = doc.data();
+            if (inv.type === 'asset_update' && inv.doc_id && inv.details) {
+              const existing = cache.assets.find(a => a.asset_id === inv.doc_id);
+              if (existing) {
+                if (inv.details.name) existing.name = inv.details.name;
+                if (inv.details.version) existing.version = inv.details.version;
+                if (inv.details.attributes) {
+                  existing.attributes = { ...existing.attributes, ...inv.details.attributes };
+                }
+              }
+            } else if (inv.type === 'curriculum_write') {
+              cache.isLoaded = false;
+              cache.loadPromise = cache.loadFromFirestore().then(() => { cache.isLoaded = true; cache.loadPromise = null; });
+            }
+          });
+        }, err => {
+          console.error('[Server Cache] Invalidation listener error:', err);
+          setTimeout(setupInvalidationListener, 2000);
+        });
+    };
+    setupInvalidationListener();
 
   } catch (err) {
     console.warn('Warming up cache failed on startup, it will lazy-load on the first request:', err.message);

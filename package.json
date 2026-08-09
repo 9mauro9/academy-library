@@ -17,6 +17,7 @@
     "verify": "NODE_PATH=./node_modules node test/verify.cjs",
     "verify-frontend": "NODE_PATH=./node_modules node test/verify_frontend_api.cjs",
     "verify-versioning": "NODE_PATH=./node_modules node test/verify_versioning.cjs",
+    "verify-taxonomy": "NODE_PATH=./node_modules node test/verify_taxonomy.cjs",
     "sync-docs": "NODE_PATH=./node_modules node scripts/sync-docs.cjs"
   },
   "dependencies": {

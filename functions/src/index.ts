@@ -555,3 +555,117 @@ ${JSON.stringify(cleanContext, null, 2)}
     throw new functions.https.HttpsError('internal', `Failed to generate reply: ${err.message}`);
   }
 });
+
+// Storage Taxonomy & Event-Driven GCS Trigger
+const PRIMARY_BUCKET = 'academy-content-bucket';
+
+const TAXONOMY_RULES: Record<string, { domain: string; category: string; allowedExtensions: string[] }> = {
+  'curriculum/videos/': { domain: 'curriculum', category: 'videos', allowedExtensions: ['.mp4', '.mkv'] },
+  'curriculum/diagrams/': { domain: 'curriculum', category: 'diagrams', allowedExtensions: ['.svg', '.png'] },
+  'curriculum/documents/': { domain: 'curriculum', category: 'documents', allowedExtensions: ['.ppt', '.pdf'] },
+  'marketing/documents/': { domain: 'marketing', category: 'documents', allowedExtensions: ['.pdf'] },
+  'marketing/media/': { domain: 'marketing', category: 'media', allowedExtensions: ['.mp4'] },
+  'platform/exports/': { domain: 'platform', category: 'exports', allowedExtensions: ['.json', '.csv', '.dump', '.tar', '.gz', '.zip', '.xml', '.bin', '.bak', '.sql'] }
+};
+
+function validateTaxonomyPath(destinationPath: string) {
+  if (!destinationPath || typeof destinationPath !== 'string') {
+    return { valid: false, domain: null, asset_category: null, error: 'Destination path must be a non-empty string.' };
+  }
+
+  let cleanPath = destinationPath.trim();
+  if (cleanPath.startsWith('gs://' + PRIMARY_BUCKET + '/')) {
+    cleanPath = cleanPath.slice(('gs://' + PRIMARY_BUCKET + '/').length);
+  } else if (cleanPath.startsWith('gs://')) {
+    const parts = cleanPath.slice(5).split('/');
+    parts.shift();
+    cleanPath = parts.join('/');
+  }
+  cleanPath = cleanPath.replace(/^\/+/, '');
+
+  let matchedPrefix = null;
+  let matchedRule = null;
+
+  for (const [prefix, rule] of Object.entries(TAXONOMY_RULES)) {
+    if (cleanPath.startsWith(prefix)) {
+      matchedPrefix = prefix;
+      matchedRule = rule;
+      break;
+    }
+  }
+
+  if (!matchedRule) {
+    return { valid: false, domain: null, asset_category: null, error: `Path '${destinationPath}' violates storage taxonomy.` };
+  }
+
+  const filename = cleanPath.slice(matchedPrefix!.length);
+  if (!filename) {
+    return { valid: false, domain: matchedRule.domain, asset_category: matchedRule.category, error: `Missing file name in path '${destinationPath}'.` };
+  }
+
+  const dotIdx = filename.lastIndexOf('.');
+  const ext = dotIdx !== -1 ? filename.slice(dotIdx).toLowerCase() : '';
+
+  if (!ext || !matchedRule.allowedExtensions.includes(ext)) {
+    return { valid: false, domain: matchedRule.domain, asset_category: matchedRule.category, error: `File extension '${ext}' is not allowed for '${matchedPrefix}'.` };
+  }
+
+  return { valid: true, domain: matchedRule.domain, asset_category: matchedRule.category, cleanPath, fullGcsUri: `gs://${PRIMARY_BUCKET}/${cleanPath}`, error: null };
+}
+
+// Storage Trigger: Validates and processes uploaded files against taxonomy
+export const onMediaUpload = functions.storage.bucket(PRIMARY_BUCKET).object().onFinalize(async (object) => {
+  const filePath = object.name;
+  if (!filePath) return;
+
+  console.log(`Processing storage upload event for object: ${filePath}`);
+
+  const validation = validateTaxonomyPath(filePath);
+  if (!validation.valid) {
+    console.warn(`[TAXONOMY VIOLATION] File '${filePath}' rejected: ${validation.error}`);
+    return;
+  }
+
+  const filename = filePath.split('/').pop() || filePath;
+  const slug = filename.toLowerCase().replace(/\.[^/.]+$/, '').replace(/[^\w\s-]/g, '').replace(/[-\s]+/g, '-');
+  const assetId = `asset_${slug}`;
+
+  const assetRef = db.collection('assets').doc(assetId);
+  const docSnap = await assetRef.get();
+
+  const gcsUri = validation.fullGcsUri;
+  const contentHash = object.md5Hash ? `md5:${object.md5Hash}` : `sha256:${object.generation || Date.now()}`;
+
+  if (docSnap.exists) {
+    await assetRef.update({
+      gcs_uri: gcsUri,
+      domain: validation.domain,
+      asset_category: validation.asset_category,
+      content_hash: contentHash,
+      last_updated: new Date().toISOString()
+    });
+    console.log(`Updated asset record '${assetId}' with taxonomy fields.`);
+  } else {
+    await assetRef.set({
+      name: filename.replace(/\.[^/.]+$/, ''),
+      current_title: filename.replace(/\.[^/.]+$/, ''),
+      title_aliases: [],
+      type: validation.asset_category === 'videos' || validation.asset_category === 'media' ? 'video' : 'document',
+      domain: validation.domain,
+      asset_category: validation.asset_category,
+      gcs_uri: gcsUri,
+      content_hash: contentHash,
+      major_version: 1,
+      minor_version: 0,
+      version: 1,
+      status: 'ACTIVE',
+      is_latest: true,
+      attributes: {
+        duration: 0,
+        last_updated: new Date().toISOString().split('T')[0]
+      }
+    });
+    console.log(`Created new asset record '${assetId}' with taxonomy fields.`);
+  }
+});
+

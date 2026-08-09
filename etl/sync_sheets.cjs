@@ -23,6 +23,7 @@ loadEnv();
 const { getApps, initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { createCheckpoint } = require('./history_manager.cjs');
+const { inferTaxonomy, PRIMARY_BUCKET } = require('../api/taxonomy.cjs');
 
 // Initialize Firebase Admin if not initialized
 if (getApps().length === 0) {
@@ -216,11 +217,22 @@ async function syncGoogleSheets() {
     }
     const comments = commentsIdx !== -1 ? cleanString(r[commentsIdx]) : null;
 
+    const taxonomy = inferTaxonomy(null, assetType, assetName);
+
     const assetDoc = {
       asset_id: assetId,
       name: assetName,
+      current_title: assetName,
+      title_aliases: [],
       type: assetType,
+      domain: taxonomy.domain,
+      asset_category: taxonomy.asset_category,
+      gcs_uri: taxonomy.gcs_uri,
+      content_hash: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      major_version: 1,
+      minor_version: 0,
       version: 1,
+      status: 'ACTIVE',
       is_latest: true,
       attributes: {
         duration: durationSec,

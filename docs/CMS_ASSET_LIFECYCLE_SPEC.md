@@ -67,10 +67,12 @@ To prevent breaking course links when assets are updated or renamed, entities ar
     "Introduction to BGP",
     "Arista BGP Setup Basics"
   ],
+  "domain": "curriculum",
+  "asset_category": "videos",
   "major_version": 1,
   "minor_version": 2,
   "content_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "gcs_uri": "gs://academy-media-bucket/videos/bgp_intro_v1_2.mp4",
+  "gcs_uri": "gs://academy-content-bucket/curriculum/videos/bgp_intro_v1_2.mp4",
   "duration_seconds": 845,
   "last_updated": "2026-08-06T08:30:00Z",
   "status": "ACTIVE"
@@ -86,7 +88,7 @@ To prevent breaking course links when assets are updated or renamed, entities ar
   "title_at_time": "Introduction to BGP",
   "change_type": "MINOR_EDIT",
   "change_description": "Trimmed audio gap at 04:12 and re-rendered 1080p stream.",
-  "gcs_uri": "gs://academy-media-bucket/archive/bgp_intro_v1_1.mp4",
+  "gcs_uri": "gs://academy-content-bucket/platform/exports/archive_bgp_intro_v1_1.mp4",
   "modified_by": "admin_user_01",
   "timestamp": "2026-08-03T14:20:00Z"
 }

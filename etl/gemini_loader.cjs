@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { inferTaxonomy } = require('../api/taxonomy.cjs');
 
 /**
  * Loads the structured data extracted by Gemini into Firestore assets and curriculum collections.
@@ -30,10 +31,21 @@ async function loadGeminiParsedData(db, parsedData) {
 
   for (const asset of assets) {
     const docRef = assetCollection.doc(asset.asset_id);
+    const taxonomy = inferTaxonomy(asset.gcs_uri, asset.type || 'video', asset.name);
+
     const assetData = {
       name: asset.name,
+      current_title: asset.current_title || asset.name,
+      title_aliases: asset.title_aliases || [],
       type: asset.type || 'video',
+      domain: asset.domain || taxonomy.domain,
+      asset_category: asset.asset_category || taxonomy.asset_category,
+      gcs_uri: asset.gcs_uri || taxonomy.gcs_uri,
+      content_hash: asset.content_hash || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      major_version: asset.major_version || 1,
+      minor_version: asset.minor_version || 0,
       version: asset.version || 1,
+      status: asset.status || 'ACTIVE',
       is_latest: true,
       attributes: {
         duration: asset.attributes?.duration ? parseInt(asset.attributes.duration, 10) : 0,

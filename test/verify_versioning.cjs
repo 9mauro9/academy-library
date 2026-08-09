@@ -36,6 +36,10 @@ async function runVersioningTests() {
   console.log('=== STARTING DATABASE SNAPSHOT VERSIONING TESTS ===');
   
   try {
+    // Ensure clean state before starting
+    try { await db.collection('assets').doc('rollback-test-dummy-asset').delete(); } catch (e) {}
+    try { await db.collection('curriculum_map').doc('rollback-test-dummy-map').delete(); } catch (e) {}
+
     // 1. Fetch current counts
     const assetsSnap = await db.collection('assets').get();
     const curriculumSnap = await db.collection('curriculum_map').get();

@@ -163,8 +163,17 @@ export const saveTopicsList = async (topics: any[]) => {
     // Decompose into asset details
     const assetData = {
       name: item.lesson,
+      current_title: item.lesson,
+      title_aliases: [],
       type: 'video', // Default type
+      domain: 'curriculum',
+      asset_category: 'videos',
+      gcs_uri: `gs://academy-content-bucket/curriculum/videos/${assetId}.mp4`,
+      content_hash: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      major_version: 1,
+      minor_version: 0,
       version: 1,
+      status: 'ACTIVE',
       is_latest: true,
       attributes: {
         duration: (item.durationMins || 20) * 60,

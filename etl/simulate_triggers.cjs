@@ -55,10 +55,11 @@ function listenAssets() {
           const invDoc = {
             type: 'asset_update',
             doc_id: assetId,
-            timestamp: FieldValue.serverTimestamp(),
+            timestamp: new Date().toISOString(),
             details: {
               name: data.name,
-              version: data.version
+              version: data.version,
+              attributes: data.attributes
             }
           };
           await db.collection('cache_invalidations').add(invDoc);
@@ -97,7 +98,7 @@ function listenCurriculum() {
             type: 'curriculum_write',
             doc_id: mapId,
             change_type: change.type,
-            timestamp: FieldValue.serverTimestamp(),
+            timestamp: new Date().toISOString(),
             details: {
               track_id: data.track_id
             }

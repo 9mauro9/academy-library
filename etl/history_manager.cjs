@@ -33,13 +33,13 @@ async function createCheckpoint(db, author, description) {
     const refId = d.asset_ref ? (d.asset_ref.id || (d.asset_ref._path && d.asset_ref._path.segments && d.asset_ref._path.segments.slice(-1)[0])) : null;
     curriculum.push({
       id: doc.id,
-      track_id: d.track_id,
-      sub_track: d.sub_track,
-      lesson: d.lesson,
-      topic: d.topic,
-      sub_topic_number: d.sub_topic_number,
-      asset_name: d.asset_name,
-      asset_ref_id: refId
+      track_id: d.track_id || null,
+      sub_track: d.sub_track || null,
+      lesson: d.lesson || null,
+      topic: d.topic || null,
+      sub_topic_number: d.sub_topic_number !== undefined ? d.sub_topic_number : null,
+      asset_name: d.asset_name || null,
+      asset_ref_id: refId || null
     });
   });
 

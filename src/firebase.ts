@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyFakeKeyForAcademyRecommendations1234",
   authDomain: "academy-live-builder.firebaseapp.com",
   projectId: "academy-live-builder",
-  storageBucket: "academy-live-builder.appspot.com",
+  storageBucket: "academy-content-bucket",
   messagingSenderId: "353347356715",
   appId: "1:353347356715:web:abcdef1234567890"
 };

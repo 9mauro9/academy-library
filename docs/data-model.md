@@ -12,10 +12,12 @@ Contains normalized, unique, and versioned asset metadata documents.
 | `asset_id` | **String** (Document ID) | Slugified unique asset identifier (e.g. `asset_bgp_intro_v1`). |
 | `current_title` | **String** | The display title of the asset (e.g., `EOS BGP Fundamentals & Peering`). |
 | `title_aliases` | **Array of Strings** | Historical titles for traceability ("Formerly Known As"). |
+| `domain` | **String** | High-level taxonomy domain (`curriculum`, `marketing`, `platform`). |
+| `asset_category` | **String** | Sub-category media classification (`videos`, `diagrams`, `documents`, `media`, `exports`). |
+| `gcs_uri` | **String** | Cloud Storage URI (`gs://academy-content-bucket/{domain}/{asset_category}/...`). |
 | `major_version` | **Number** | Major version index (resets on complete re-record / major update). |
 | `minor_version` | **Number** | Minor version index (increments on audio cleanup / re-encoding). |
 | `content_hash` | **String** | SHA-256 binary checksum (e.g. `sha256:e3b0c...`). |
-| `gcs_uri` | **String** | Cloud Storage URI pointing to the active media file in GCS. |
 | `duration_seconds` | **Number** | Asset duration in seconds computed via FFmpeg on upload. |
 | `last_updated` | **String** | ISO 8601 timestamp of last metadata/binary modification. |
 | `status` | **String** | Asset operational state: `ACTIVE` or `ARCHIVED`. |

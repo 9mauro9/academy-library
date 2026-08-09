@@ -1,0 +1,41 @@
+{
+  "rule": [
+    {
+      "action": {
+        "type": "SetStorageClass",
+        "storageClass": "COLDLINE"
+      },
+      "condition": {
+        "matchesPrefix": [
+          "curriculum/videos/"
+        ],
+        "numNewerVersions": 1,
+        "daysSinceNoncurrentTime": 30
+      }
+    },
+    {
+      "action": {
+        "type": "Delete"
+      },
+      "condition": {
+        "matchesPrefix": [
+          "marketing/documents/",
+          "marketing/media/"
+        ],
+        "numNewerVersions": 2,
+        "daysSinceNoncurrentTime": 90
+      }
+    },
+    {
+      "action": {
+        "type": "Delete"
+      },
+      "condition": {
+        "matchesPrefix": [
+          "platform/exports/"
+        ],
+        "age": 14
+      }
+    }
+  ]
+}

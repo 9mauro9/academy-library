@@ -21,6 +21,7 @@ loadEnv();
 
 const admin = require('firebase-admin');
 const { getFirestore } = require('firebase-admin/firestore');
+const { inferTaxonomy } = require('../api/taxonomy.cjs');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -55,12 +56,22 @@ async function runLoader() {
   
   for (const asset of assets) {
     const docRef = assetCollection.doc(asset.asset_id);
-    
+    const taxonomy = inferTaxonomy(asset.gcs_uri, asset.type, asset.name || asset.current_title);
+
     // Structure asset document
     const assetData = {
       name: asset.name,
+      current_title: asset.current_title || asset.name,
+      title_aliases: asset.title_aliases || [],
       type: asset.type,
-      version: asset.version,
+      domain: asset.domain || taxonomy.domain,
+      asset_category: asset.asset_category || taxonomy.asset_category,
+      gcs_uri: asset.gcs_uri || taxonomy.gcs_uri,
+      content_hash: asset.content_hash || 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      major_version: asset.major_version || 1,
+      minor_version: asset.minor_version || 0,
+      version: asset.version || 1,
+      status: asset.status || 'ACTIVE',
       is_latest: asset.is_latest,
       attributes: asset.attributes
     };
