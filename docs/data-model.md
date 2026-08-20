@@ -71,16 +71,30 @@ Logs real-time change events for client SDK cache eviction.
 
 ---
 
-## 5. Collection: `external_progress` (Optional Extension Point)
-Optional downstream payload schema for external LMS systems. Not natively managed by Academy Library core.
+---
+
+## 6. Collection: `curriculum_map`
+Stores resolved curriculum tree hierarchy mapping entries connecting tracks, sub-tracks, lessons, topics, and asset pointers.
 
 | Field Name | Type | Description |
 | :--- | :--- | :--- |
-| `user_id` | **String** | External user/student identifier. |
-| `node_id` | **String** | Associated learning node document ID. |
-| `asset_id` | **String** | Associated asset document ID. |
-| `completed` | **Boolean** | Completion status flag. |
-| `completed_major_version` | **Number** | Asset major version completed by user. |
-| `completed_minor_version` | **Number** | Asset minor version completed by user. |
-| `completed_at` | **String** | ISO 8601 completion timestamp. |
-| `watch_time_seconds` | **Number** | Total playback duration recorded for student. |
+| `id` | **String** (Document ID) | Unique curriculum map node document ID. |
+| `track_id` | **String** | Slugified track identifier (`network-foundations`, `data-center`, `campus`, `automation`, `wan-routing`). |
+| `track_name` | **String** | Display name of the curriculum track (e.g. `Network Foundations`, `Data Center`). |
+| `sub_track` | **String** | Sub-track chapter classification (e.g. `Foundations`, `Advanced Routing`). |
+| `lesson` | **String** | Display name of the lesson unit. |
+| `topic` | **String** | Specific curriculum topic title. |
+| `sub_topic` | **String** | Sub-topic label corresponding to content asset. |
+| `asset_id` | **String** | Reference pointer to `/assets/{assetId}` document. |
+| `sorting` | **Map** | Hierarchy sorting keys (`track_number`, `sub_track_number`, `lesson_number`, `topic_number`, `sub_topic_number`). |
+
+### Track Numerical Order Mapping Specification
+Curriculum tracks MUST be rendered in strict numerical sequence:
+- **Track #1**: `network-foundations` / `Network Foundations`
+- **Track #2**: `data-center` / `Data Center`
+- **Track #3**: `campus` / `Campus`
+- **Track #4**: `automation` / `Automation`
+- **Track #5**: `wan-routing` / `WAN Routing`
+
+> [!NOTE]
+> The `getTrackNumber` resolver maps track slugs/names to their canonical numerical index (1–5), ensuring numerical ordering is enforced even if raw database documents contain uniform sorting defaults (such as `sorting.track_number = 1.0`).

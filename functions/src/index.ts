@@ -93,8 +93,8 @@ function sortPathModules(modules: any[], catalog: any[]) {
 
 // Helper function to build the flat curriculum catalog by joining curriculum_map and assets
 async function fetchCatalogFromDB() {
-  const curriculumSnapshot = await db.collection('curriculum_map').get();
-  const assetsSnapshot = await db.collection('assets').get();
+  const curriculumSnapshot = await db.collection('curriculum_map').limit(50).get();
+  const assetsSnapshot = await db.collection('assets').limit(50).get();
 
   const assetsMap = new Map();
   assetsSnapshot.docs.forEach(doc => {
@@ -180,7 +180,7 @@ export const onAssetWrite = functions.runWith({ secrets: ["GEMINI_API_KEY"] }).f
 // Admin Callable: Process/Generate missing embeddings on demand for assets
 export const processEmbeddings = functions.runWith({ secrets: ["GEMINI_API_KEY"] }).https.onCall(async (data, context) => {
   const ai = getAIClient();
-  const assetsSnapshot = await db.collection('assets').get();
+  const assetsSnapshot = await db.collection('assets').limit(50).get();
   let updatedCount = 0;
 
   for (const doc of assetsSnapshot.docs) {
@@ -353,7 +353,7 @@ export const chatWithArchitect = functions.runWith({ secrets: ["GEMINI_API_KEY"]
       });
       const snapshot = await queryRef.get();
       
-      const curriculumSnap = await db.collection('curriculum_map').get();
+      const curriculumSnap = await db.collection('curriculum_map').limit(50).get();
       snapshot.docs.forEach(assetDoc => {
         const asset = assetDoc.data();
         const assetId = assetDoc.id;

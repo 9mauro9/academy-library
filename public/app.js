@@ -1,6 +1,6 @@
 // Academy Library CMS SPA Application Logic
 
-const FIRESTORE_REST_BASE = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/academy-live-db/documents';
+const FIRESTORE_REST_BASE = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents';
 
 function decodeFirestoreFields(fields) {
   if (!fields) return {};
@@ -21,8 +21,7 @@ function decodeFirestoreFields(fields) {
 
 async function fetchFirestoreRest(collection, maxCount = 1000) {
   const bases = [
-    'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents',
-    'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/academy-live-db/documents'
+    'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents'
   ];
   for (const base of bases) {
     try {
@@ -553,6 +552,30 @@ class AcademyLibraryApp {
     if (!tracksList) return;
     tracksList.innerHTML = '<div class="loading-placeholder">Loading tracks...</div>';
 
+    const getTrackNumber = (tid, tname, num) => {
+      const idKey = (tid || '').toLowerCase().trim().replace(/_/g, '-');
+      const nameKey = (tname || '').toLowerCase().trim();
+      const TRACK_MAP = {
+        'network-foundations': 1,
+        'network foundations': 1,
+        'data-center': 2,
+        'data center': 2,
+        'campus': 3,
+        'automation': 4,
+        'wan-routing': 5,
+        'wan routing': 5
+      };
+      if (TRACK_MAP[idKey]) return TRACK_MAP[idKey];
+      if (TRACK_MAP[nameKey]) return TRACK_MAP[nameKey];
+      if (idKey.includes('foundation') || nameKey.includes('foundation')) return 1;
+      if (idKey.includes('data-center') || idKey.includes('data center') || nameKey.includes('data center')) return 2;
+      if (idKey.includes('campus') || nameKey.includes('campus')) return 3;
+      if (idKey.includes('automation') || nameKey.includes('automation')) return 4;
+      if (idKey.includes('wan') || idKey.includes('routing') || nameKey.includes('wan') || nameKey.includes('routing')) return 5;
+      if (num !== undefined && num !== null && num !== 999) return num;
+      return 999;
+    };
+
     try {
       let tracks = null;
       try {
@@ -566,18 +589,26 @@ class AcademyLibraryApp {
         docs.forEach(d => {
           const tid = d.track_id || d.track || 'default';
           const tname = d.track_name || d.track || tid;
-          const tnum = (d.sorting && d.sorting.track_number !== undefined) ? d.sorting.track_number : (d.track_number !== undefined ? d.track_number : 999);
+          const rawNum = (d.sorting && d.sorting.track_number !== undefined) ? d.sorting.track_number : (d.track_number !== undefined ? d.track_number : 999);
+          const tnum = getTrackNumber(tid, tname, rawNum);
           if (!map.has(tid)) {
             map.set(tid, { track_id: tid, track_name: tname, track_number: tnum });
           } else {
             const existing = map.get(tid);
-            if (existing.track_number === 999 && tnum !== 999) {
+            if ((existing.track_number === 999 || existing.track_number === undefined) && tnum !== 999) {
               existing.track_number = tnum;
             }
           }
         });
-        tracks = Array.from(map.values()).sort((a, b) => (a.track_number || 999) - (b.track_number || 999));
+        tracks = Array.from(map.values());
       }
+
+      tracks.sort((a, b) => {
+        const numA = getTrackNumber(a.track_id, a.track_name, a.track_number);
+        const numB = getTrackNumber(b.track_id, b.track_name, b.track_number);
+        if (numA !== numB) return numA - numB;
+        return (a.track_name || '').localeCompare(b.track_name || '');
+      });
 
       if (!tracks || tracks.length === 0) {
         tracksList.innerHTML = '<div class="loading-placeholder">No tracks available.</div>';

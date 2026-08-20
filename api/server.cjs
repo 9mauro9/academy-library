@@ -60,7 +60,7 @@ class MemoryCache {
     this.loadPromise = (async () => {
       try {
         console.log('--- Initializing in-memory cache from Firestore ---');
-        const assetsSnap = await db.collection('assets').orderBy('name').get();
+        const assetsSnap = await db.collection('assets').orderBy('name').limit(50).get();
         const assets = [];
         assetsSnap.forEach(doc => {
           const data = doc.data();
@@ -82,7 +82,7 @@ class MemoryCache {
         this.assets = assets;
         console.log(`Loaded ${this.assets.length} assets into memory cache.`);
 
-        const mapSnap = await db.collection('curriculum_map').get();
+        const mapSnap = await db.collection('curriculum_map').limit(50).get();
         const items = [];
         mapSnap.forEach(doc => {
           items.push({
@@ -671,10 +671,35 @@ app.get('/api/tracks', async (req, res) => {
       console.log('[GET /api/tracks] Sample item 0:', cache.curriculumMap[0]);
     }
     const tracksMap = new Map();
+    const getTrackNumber = (tid, tname, num) => {
+      const idKey = (tid || '').toLowerCase().trim().replace(/_/g, '-');
+      const nameKey = (tname || '').toLowerCase().trim();
+      const TRACK_MAP = {
+        'network-foundations': 1,
+        'network foundations': 1,
+        'data-center': 2,
+        'data center': 2,
+        'campus': 3,
+        'automation': 4,
+        'wan-routing': 5,
+        'wan routing': 5
+      };
+      if (TRACK_MAP[idKey]) return TRACK_MAP[idKey];
+      if (TRACK_MAP[nameKey]) return TRACK_MAP[nameKey];
+      if (idKey.includes('foundation') || nameKey.includes('foundation')) return 1;
+      if (idKey.includes('data-center') || idKey.includes('data center') || nameKey.includes('data center')) return 2;
+      if (idKey.includes('campus') || nameKey.includes('campus')) return 3;
+      if (idKey.includes('automation') || nameKey.includes('automation')) return 4;
+      if (idKey.includes('wan') || idKey.includes('routing') || nameKey.includes('wan') || nameKey.includes('routing')) return 5;
+      if (num !== undefined && num !== null && num !== 999) return num;
+      return 999;
+    };
+
     cache.curriculumMap.forEach(item => {
       const tid = item.track_id;
       if (tid) {
-        const meta = TRACK_NAMES[tid] || { name: item.track_name || tid, number: item.track_number || (item.sorting && item.sorting.track_number) || 999 };
+        const rawNum = item.track_number || (item.sorting && item.sorting.track_number) || 999;
+        const meta = TRACK_NAMES[tid] || { name: item.track_name || tid, number: getTrackNumber(tid, item.track_name, rawNum) };
         if (!tracksMap.has(tid)) {
           tracksMap.set(tid, {
             track_id: tid,

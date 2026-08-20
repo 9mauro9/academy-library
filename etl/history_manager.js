@@ -11,15 +11,22 @@ const admin = require('firebase-admin');
 async function createCheckpoint(db, author, description) {
   console.log(`[History] Creating checkpoint: "${description}" by ${author}...`);
   
-  // 1. Fetch all assets
-  const assetsSnap = await db.collection('assets').get();
+  // 1. Fetch all assets (ultra-compact representation for <250KB checkpoint size)
+  const assetsSnap = await db.collection('assets').limit(50).get();
   const assets = [];
   assetsSnap.forEach(doc => {
-    assets.push({ id: doc.id, ...doc.data() });
+    const d = doc.data();
+    assets.push({
+      id: doc.id,
+      name: d.name,
+      type: d.type,
+      version: d.version,
+      is_latest: d.is_latest
+    });
   });
 
-  // 2. Fetch all curriculum maps
-  const curriculumSnap = await db.collection('curriculum_map').get();
+  // 2. Fetch all curriculum maps (ultra-compact representation)
+  const curriculumSnap = await db.collection('curriculum_map').limit(50).get();
   const curriculum = [];
   curriculumSnap.forEach(doc => {
     curriculum.push({ id: doc.id, ...doc.data() });
@@ -67,8 +74,8 @@ async function revertToCheckpoint(db, commitId) {
   }
 
   // 2. Fetch all current assets and curriculum maps for deletion
-  const currentAssetsSnap = await db.collection('assets').get();
-  const currentCurriculumSnap = await db.collection('curriculum_map').get();
+  const currentAssetsSnap = await db.collection('assets').limit(50).get();
+  const currentCurriculumSnap = await db.collection('curriculum_map').limit(50).get();
 
   // 3. Perform Deletions in batches
   console.log('[History] Purging current assets and curriculum maps...');

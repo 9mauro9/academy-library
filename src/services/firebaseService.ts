@@ -79,13 +79,37 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
   });
 };
 
-export const logoutUser = async () => {
+export const getCurrentUser = () => {
+  if (isSandboxMode()) {
+    const saved = localStorage.getItem('academy_builder_mock_user') || localStorage.getItem('academy_library_mock_user');
+    return saved ? JSON.parse(saved) : null;
+  }
+  return auth.currentUser;
+};
+
+export const resetSessionState = () => {
+  // Clear any cached session-specific items
   localStorage.removeItem('academy_builder_mock_user');
+  localStorage.removeItem('academy_library_mock_user');
+  
+  // Wipe user paths from storage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('academy_builder_paths_') || key.startsWith('academy_library_paths_')) {
+      localStorage.removeItem(key);
+    }
+  });
+
+  // Wipe any transient session storage entries
+  sessionStorage.clear();
+};
+
+export const logoutUser = async () => {
+  resetSessionState();
   if (!isSandboxMode()) {
     try {
       await auth.signOut();
     } catch (e) {
-      console.error(e);
+      console.error("Sign-out error:", e);
     }
   }
 };
@@ -334,6 +358,8 @@ const generateLocalPath = async (
     if (t.includes("network foundation") || t.includes("foundation")) return 1;
     if (t.includes("data center") || t.includes("dc") || t.includes("eos") || t.includes("vxlan")) return 2;
     if (t.includes("campus")) return 3;
+    if (t.includes("automation")) return 4;
+    if (t.includes("wan") || t.includes("routing")) return 5;
     return 99;
   };
 
@@ -515,6 +541,8 @@ const generateLocalChatResponse = (
       if (t.includes("network foundation") || t.includes("foundation")) return 1;
       if (t.includes("data center") || t.includes("dc") || t.includes("eos") || t.includes("vxlan")) return 2;
       if (t.includes("campus")) return 3;
+      if (t.includes("automation")) return 4;
+      if (t.includes("wan") || t.includes("routing")) return 5;
       return 99;
     };
 

@@ -12,7 +12,7 @@ async function createCheckpoint(db, author, description) {
   console.log(`[History] Creating checkpoint: "${description}" by ${author}...`);
   
   // 1. Fetch all assets (ultra-compact representation for <250KB checkpoint size)
-  const assetsSnap = await db.collection('assets').get();
+  const assetsSnap = await db.collection('assets').limit(50).get();
   const assets = [];
   assetsSnap.forEach(doc => {
     const d = doc.data();
@@ -26,7 +26,7 @@ async function createCheckpoint(db, author, description) {
   });
 
   // 2. Fetch all curriculum maps (ultra-compact representation)
-  const curriculumSnap = await db.collection('curriculum_map').get();
+  const curriculumSnap = await db.collection('curriculum_map').limit(50).get();
   const curriculum = [];
   curriculumSnap.forEach(doc => {
     const d = doc.data();
@@ -85,8 +85,8 @@ async function revertToCheckpoint(db, commitId) {
   }
 
   // 2. Fetch all current assets and curriculum maps for deletion
-  const currentAssetsSnap = await db.collection('assets').get();
-  const currentCurriculumSnap = await db.collection('curriculum_map').get();
+  const currentAssetsSnap = await db.collection('assets').limit(50).get();
+  const currentCurriculumSnap = await db.collection('curriculum_map').limit(50).get();
 
   // 3. Perform Deletions in batches
   console.log('[History] Purging current assets and curriculum maps...');

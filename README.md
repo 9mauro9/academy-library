@@ -27,6 +27,26 @@ Data is pulled directly via Google Sheets API v4 (or client-side CSV export) fro
 
 ---
 
+## Hierarchical Hybrid Storage & OLM Policy
+All media binaries and documents are stored in Google Cloud Storage under **`gs://academy-content-bucket/`** (`academy-live-builder` project).
+
+- **Full Specification Document**: [`docs/STORAGE_TAXONOMY_SPEC.md`](file:///Users/maurolollo/Desktop/Academy%20Library/docs/STORAGE_TAXONOMY_SPEC.md)
+
+### Domain-First Path Taxonomy
+- `curriculum/videos/` (`.mp4`, `.mkv`) — HD Video Lectures
+- `curriculum/diagrams/` (`.svg`, `.png`) — Network Topologies & Schematics
+- `curriculum/documents/` (`.ppt`, `.pdf`) — Course Slides & Lab Guides
+- `marketing/documents/` (`.pdf`) — Product Decks, Whitepapers & Brochures
+- `marketing/media/` (`.mp4`) — Promotional Trailers & Highlights
+- `platform/exports/` (`.json`, `.csv`, `.dump`, `.tar`, `.gz`, `.zip`, `.xml`, `.bin`, `.bak`, `.sql`) — System Dumps & Exports
+
+### Object Lifecycle Management (OLM) Rules
+1. **Curriculum Videos**: Replaced/archived versions older than 30 days (`daysSinceNoncurrentTime: 30`, `numNewerVersions: 1`) transition to **`COLDLINE`** storage.
+2. **Marketing Collateral**: Noncurrent versions older than 90 days with 2+ newer versions (`daysSinceNoncurrentTime: 90`, `numNewerVersions: 2`) are **`DELETED`**.
+3. **Platform Exports**: Export files exceeding 14 days of age (`age: 14`) are automatically **`DELETED`**.
+
+---
+
 ## Track Hierarchy & Ordering Rules
 
 ### Hierarchy Structure
@@ -40,14 +60,18 @@ Every level displays its assigned database sorting badge:
 - `📌 #topic_number`
 - `Sub-Topic #sub_topic_number` + `asset_name`
 
-### Track Numerical Ordering
-Curriculum tracks are ordered strictly by their database `track_number`:
+### Track Numerical Ordering & Resolution Engine
+Curriculum tracks are ordered strictly by their defined numerical sequence across all client interfaces (`public/app.js`), REST endpoints (`GET /api/tracks`), and SDK background processes:
 
-1. **Track #1**: Network Foundations (`network-foundations`)
-2. **Track #2**: Data Center (`data-center`)
-3. **Track #3**: Campus (`campus`)
-4. **Track #4**: Automation (`automation`)
-5. **Track #5**: WAN Routing (`wan-routing`)
+1. **Track #1**: Network Foundations (`network-foundations` / `Network Foundations`)
+2. **Track #2**: Data Center (`data-center` / `Data Center`)
+3. **Track #3**: Campus (`campus` / `Campus`)
+4. **Track #4**: Automation (`automation` / `Automation`)
+5. **Track #5**: WAN Routing (`wan-routing` / `WAN Routing`)
+
+> [!IMPORTANT]
+> **Numerical Resolution Fallback Rules**:
+> Raw database documents in `curriculum_map` may contain uniform default values (e.g. `sorting.track_number = 1.0` across all rows). To prevent identical numerical values from triggering alphabetical fallback sorting (`automation` $\to$ `campus` $\to$ `data-center`), the resolution engine (`getTrackNumber`) prioritizes explicit track ID/name slug matching (`network-foundations` = 1, `data-center` = 2, `campus` = 3, `automation` = 4, `wan-routing` = 5) prior to evaluating raw document values.
 
 ---
 

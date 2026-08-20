@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { generatePath } from './services/firebaseService';
+import { subscribeToAuth, generatePath } from './services/firebaseService';
 import { Header } from './components/Header';
 import { ProficiencyDashboard } from './components/ProficiencyDashboard';
 import { LearningPathView } from './components/LearningPathView';
 import { AIArchitectPanel } from './components/AIArchitectPanel';
-import { CourseDetailsPanel } from './components/CourseDetailsPanel';
+import { TimelineCalendar } from './components/TimelineCalendar';
 
 const getInitialTab = (): string => {
   const params = new URLSearchParams(window.location.search);
@@ -20,10 +20,28 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
   const [activePath, setActivePath] = useState<any>(null);
-  // const [selectedModules, setSelectedModules] = useState<any[] | null>(null);
   const [loadingPath, setLoadingPath] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const resizerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        // Reset transient state when session terminates
+        setActivePath(null);
+        setLoadingPath(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = () => {
+    setActivePath(null);
+    setLoadingPath(false);
+    setCurrentUser(null);
+  };
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -74,7 +92,12 @@ function App() {
 
   return (
     <>
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        currentUser={currentUser}
+        onLogout={handleLogout}
+      />
       
       <div className="main-layout">
         {/* Left Sidebar */}
@@ -93,8 +116,9 @@ function App() {
             />
           )}
           {activeTab === 'timeliner' && (
-            <CourseDetailsPanel 
-              onSelectionChange={() => {}} 
+            <TimelineCalendar 
+              path={activePath}
+              loading={loadingPath}
             />
           )}
         </div>
