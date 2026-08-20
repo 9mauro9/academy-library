@@ -98,3 +98,23 @@ Curriculum tracks MUST be rendered in strict numerical sequence:
 
 > [!NOTE]
 > The `getTrackNumber` resolver maps track slugs/names to their canonical numerical index (1–5), ensuring numerical ordering is enforced even if raw database documents contain uniform sorting defaults (such as `sorting.track_number = 1.0`).
+
+---
+
+## 7. Multi-Tenant User Isolation & Security Matrix
+
+### User Resources (`/users/{userId}/...`)
+- **Access Rule**: `request.auth.uid == userId`
+- **Sub-collections**:
+  - `learning_paths` (`/users/{userId}/learning_paths/{pathId}`): Stores personalized learning pathways and diagnostic parameters.
+  - `preferences` (`/users/{userId}/preferences/{prefId}`): User UI settings and preferences.
+  - `progress` (`/users/{userId}/progress/{nodeId}`): User curriculum progress and completed nodes.
+
+### Top-Level User-Owned Collections
+- `user_notes` (`/user_notes/{noteId}`): Requires `request.auth.uid == resource.data.userId`.
+- `timelines` (`/timelines/{timelineId}`): Requires `request.auth.uid == resource.data.userId`.
+
+### Session & Storage State Lifecycle
+- **Storage Scope**: User sessions wipe transient keys (`academy_library_mock_user`, `academy_builder_mock_user`, `academy_builder_paths_*`) upon logout or session termination via `resetSessionState()`.
+- **Client Cache Isolation**: All transient components reset active learning paths and generated models upon auth session termination.
+
