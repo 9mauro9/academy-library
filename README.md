@@ -97,3 +97,15 @@ npm run verify-frontend
 npx firebase deploy --only hosting:academy-library
 ```
 
+---
+
+## Legal Disclaimer & Terms of Use
+All applications across the Academy suite include an accessible, standardized **Legal Disclaimer** modal accessible via the header trigger:
+- **Nature of Software**: This software constitutes an experimental, non-production build provided solely for internal testing, evaluation, and investigational use cases.
+- **Assumption of Risk**: End-users assume full, sole, and unconditional responsibility and liability for any utilization, deployment, application, or misuse of the software and its outputs.
+- **No Warranty & Data Accuracy**: The application is provided strictly 'as-is' and 'as-available', without warranties of any kind. It may contain defects, technical bugs, inaccuracies, and may produce erroneous calculations, data, or output.
+- **Development & Support Status**: The system is actively under development, highly volatile, and explicitly unsupported by any formal service level agreements (SLAs) or dedicated maintenance channels.
+- **Independence & Affiliation Disclaimer**: This project is an independent, third-party initiative and maintains no legal, commercial, operational, or content-related affiliation, endorsement, or linkage to Arista Networks, Inc. or any other original equipment manufacturer.
+- **Information Classification**: The application contains strictly public, non-confidential, and non-sensitive information, and must not be used to process or store restricted, proprietary, or non-public data.
+
+

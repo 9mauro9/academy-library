@@ -1,6 +1,7 @@
-import React from 'react';
-import { BrainCircuit, Database, ShieldCheck, Sun, Moon, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { BrainCircuit, Database, ShieldCheck, Sun, Moon, LogOut, User, ShieldAlert } from 'lucide-react';
 import { isSandboxMode, logoutUser } from '../services/firebaseService';
+import { LegalDisclaimerModal } from './LegalDisclaimerModal';
 
 interface HeaderProps {
   activeTab: string;
@@ -10,6 +11,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, currentUser, onLogout }) => {
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [theme, setTheme] = React.useState(() => {
     const saved = localStorage.getItem('academy_library_theme') || localStorage.getItem('academy_builder_theme');
     return saved || 'dark';
@@ -38,16 +40,44 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, current
   const sandbox = isSandboxMode();
 
   return (
-    <header className="app-header">
-      <div className="brand-section">
-        <div className="logo-container">
-          <BrainCircuit size={16} />
+    <>
+      <header className="app-header">
+        <div className="brand-section">
+          <div className="logo-container">
+            <BrainCircuit size={16} />
+          </div>
+          <div className="brand-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <h1>Academy Library</h1>
+              <button
+                type="button"
+                onClick={() => setShowDisclaimer(true)}
+                className="disclaimer-badge-btn"
+                title="View Legal Disclaimer & Terms of Use"
+                style={{
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  color: '#f59e0b',
+                  fontSize: '0.62rem',
+                  fontWeight: 700,
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase',
+                  lineHeight: '1.2'
+                }}
+              >
+                <ShieldAlert size={10} />
+                <span>Disclaimer</span>
+              </button>
+            </div>
+            <p>Arista Academy Course Library & CMS</p>
+          </div>
         </div>
-        <div className="brand-title">
-          <h1>Academy Library</h1>
-          <p>Arista Academy Course Library & CMS</p>
-        </div>
-      </div>
 
       <div className="controls-section">
         <div className="tab-container">
@@ -108,5 +138,10 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, current
         </div>
       </div>
     </header>
+    <LegalDisclaimerModal 
+      isOpen={showDisclaimer} 
+      onClose={() => setShowDisclaimer(false)} 
+    />
+  </>
   );
 };
