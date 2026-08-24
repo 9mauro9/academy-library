@@ -6,7 +6,7 @@
   },
   "hosting": {
     "site": "academy-library",
-    "public": "public",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",

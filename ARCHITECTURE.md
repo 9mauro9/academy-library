@@ -1,6 +1,13 @@
 # Architecture Blueprint: Academy Library
 
-This document outlines the visual system architecture, processing flows, caching strategies, and asset versioning engines for the **Academy Library** application and its role within the **Academy Apps** suite (**Academy Timeliner**, **Academy Library**, **Academy Builder**, **Academy Insight**).
+This document outlines the visual system architecture, processing flows, caching strategies, and asset versioning engines for the **Academy Library** application and its role within the **Academy Apps** suite (**Academy Timeliner**, **Academy Library**, **Academy Builder**, **Academy Insight**, **Academy Toolkit**).
+
+---
+
+## 0. Standardized Frontend Architecture
+- **Framework**: React 19 (`^19.2.7`) with TypeScript (`~6.0.2`) and Vite 8 (`^8.1.1`).
+- **Styling Architecture**: Tailwind CSS (`^3.4.17`) + PostCSS (`^8.5.2`) + Autoprefixer (`^10.4.20`) with clean token mapping (`bg-primary`, `text-accent`, `border-border`, etc.) directly referencing `:root` Arista brand tokens.
+- **Ecosystem Integration**: `<AcademySuiteMenu currentAppId="library" />` in `src/components/Header.tsx`.
 
 ---
 

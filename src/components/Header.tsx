@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrainCircuit, Database, ShieldCheck, Sun, Moon, LogOut, User, ShieldAlert } from 'lucide-react';
 import { isSandboxMode, logoutUser } from '../services/firebaseService';
 import { LegalDisclaimerModal } from './LegalDisclaimerModal';
+import { AcademySuiteMenu } from './AcademySuiteMenu';
 
 interface HeaderProps {
   activeTab: string;
@@ -126,6 +127,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, current
             </div>
           )}
           
+          <AcademySuiteMenu currentAppId="library" />
+
           <button 
             className="btn-action" 
             id="themeToggleBtn"
