@@ -10,7 +10,6 @@ Academy Library serves as the central administration portal for managing curricu
 
 - **Architecture**: Single Page Application (SPA) - React 19 (`^19.2.7`) + TypeScript + Vite 8
 - **Styling**: Tailwind CSS (`v3.4.17`) mapped to Arista Design Tokens (`:root` CSS variables)
-- **Suite Navigation**: Integrated `AcademySuiteMenu` for cross-app ecosystem switching
 - **Backend/Database**: Shared Cloud Firestore Database (`academy-live-builder`)
 - **Hosting Target**: `academy-library`
 - **Data Ingestion Workflow**: Automated Google Sheets API Integration (`sheets.googleapis.com`) with client-side CSV streaming fallback.
