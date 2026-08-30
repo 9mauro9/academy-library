@@ -4,13 +4,11 @@ import { isSandboxMode, logoutUser } from '../services/firebaseService';
 import { LegalDisclaimerModal } from './LegalDisclaimerModal';
 
 interface HeaderProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   currentUser?: any;
   onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, currentUser, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [theme, setTheme] = React.useState(() => {
     const saved = localStorage.getItem('academy_library_theme') || localStorage.getItem('academy_builder_theme');
@@ -80,20 +78,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, current
         </div>
 
       <div className="controls-section">
-        <div className="tab-container">
-          <button 
-            className={"tab-button " + (activeTab === 'dashboard' ? 'active' : '')}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            Manual Path
-          </button>
-          <button 
-            className={"tab-button " + (activeTab === 'chat' ? 'active' : '')}
-            onClick={() => setActiveTab('chat')}
-          >
-            AI Path
-          </button>
-        </div>
 
         <div className="control-group" style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {sandbox ? (
