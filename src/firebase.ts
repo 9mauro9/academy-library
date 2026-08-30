@@ -3,15 +3,14 @@ import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
-// Setup config. When using emulators, these can be placeholder values, but 
-// pointing to the target project ensures production config aligns.
 const firebaseConfig = {
-  apiKey: "AIzaSyFakeKeyForAcademyRecommendations1234",
+  apiKey: "AIzaSyBgAKn-9rWtVRd93WCZIIqSnmLNMOBic90",
   authDomain: "academy-live-builder.firebaseapp.com",
   projectId: "academy-live-builder",
-  storageBucket: "academy-content-bucket",
+  storageBucket: "academy-live-builder.firebasestorage.app",
   messagingSenderId: "353347356715",
-  appId: "1:353347356715:web:abcdef1234567890"
+  appId: "1:353347356715:web:f1ce65d5be524b058c826e",
+  measurementId: "G-DJL7ZYL0M1"
 };
 
 const app = initializeApp(firebaseConfig);

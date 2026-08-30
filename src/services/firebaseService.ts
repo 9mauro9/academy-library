@@ -2,6 +2,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInAnonymously as firebaseSignInAnonymously,
+  signInWithPopup,
+  GoogleAuthProvider,
   onAuthStateChanged as firebaseOnAuthStateChanged
 } from 'firebase/auth';
 import { collection, getDocs, writeBatch, doc, setDoc } from 'firebase/firestore';
@@ -24,6 +26,12 @@ const mockUser = {
 };
 
 // --- AUTH SERVICES ---
+
+export const signInWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return signInWithPopup(auth, provider);
+};
 
 export const loginUser = async (email: string, pass: string) => {
   if (isSandboxMode()) {
