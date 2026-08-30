@@ -44,6 +44,10 @@
       <div class="sidebar-footer">
         <div class="status-indicator online"></div>
         <div class="status-text">Connected: academy-library</div>
+        <div id="auth-user-info" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:none">
+          <div id="auth-user-name" style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px"></div>
+          <button id="signout-btn" onclick="firebase.auth().signOut()" style="width:100%;padding:6px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;cursor:pointer;font-size:0.72rem;font-weight:600;letter-spacing:0.02em">Sign Out</button>
+        </div>
       </div>
     </aside>
 
@@ -436,9 +440,77 @@
     </form>
   </dialog>
 
-  <!-- Firebase SDK script initialization -->
+  <!-- Google Auth Overlay — shown until signed in -->
+  <div id="auth-overlay" style="position:fixed;inset:0;z-index:9999;background:var(--bg-primary,#0f1117);display:flex;align-items:center;justify-content:center">
+    <div style="background:var(--panel-bg,#1a1d27);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:360px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#06b6d4);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.3rem;margin-bottom:1.25rem">▲</div>
+      <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 0.4rem;color:#fff">Academy Library</h2>
+      <p style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin:0 0 1.5rem;line-height:1.5">Sign in to access the CMS portal</p>
+      <div id="auth-error" style="display:none;color:#f87171;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.78rem;margin-bottom:1rem;line-height:1.4"></div>
+      <button id="google-signin-btn" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 1rem;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(6,182,212,0.15));border:1px solid rgba(99,102,241,0.4);color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:600">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.215 17.64 11.907 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Google Auth Init -->
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyBgAKn-9rWtVRd93WCZIIqSnmLNMOBic90",
+      authDomain: "academy-live-builder.firebaseapp.com",
+      projectId: "academy-live-builder",
+      storageBucket: "academy-live-builder.firebasestorage.app",
+      messagingSenderId: "353347356715",
+      appId: "1:353347356715:web:f1ce65d5be524b058c826e"
+    });
+
+    const _provider = new firebase.auth.GoogleAuthProvider();
+    _provider.setCustomParameters({ prompt: 'select_account' });
+
+    document.getElementById('google-signin-btn').addEventListener('click', function() {
+      const btn = this;
+      const errEl = document.getElementById('auth-error');
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+      errEl.style.display = 'none';
+      firebase.auth().signInWithPopup(_provider).catch(function(err) {
+        errEl.textContent = err.code === 'auth/popup-closed-by-user'
+          ? 'Sign-in cancelled. Please try again.'
+          : (err.code === 'auth/popup-blocked'
+            ? 'Pop-up blocked. Please allow pop-ups for this site.'
+            : err.message);
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.215 17.64 11.907 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google';
+      });
+    });
+
+    firebase.auth().onAuthStateChanged(function(user) {
+      const overlay = document.getElementById('auth-overlay');
+      const userInfo = document.getElementById('auth-user-info');
+      const userName = document.getElementById('auth-user-name');
+      if (user) {
+        overlay.style.display = 'none';
+        userInfo.style.display = 'block';
+        userName.textContent = user.displayName || user.email || 'Signed in';
+      } else {
+        overlay.style.display = 'flex';
+        userInfo.style.display = 'none';
+        const btn = document.getElementById('google-signin-btn');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.215 17.64 11.907 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google';
+        }
+      }
+    });
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
+
