@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "pre-commit": [
+      "firebase emulators:exec --only firestore,functions 'npm test'",
+      "npm run lint",
+      "npx commitlint --edit"
+    ],
+    "post-edit": [
+      "npx oxlint --deny-warnings"
+    ]
+  }
+}

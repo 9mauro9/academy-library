@@ -1,0 +1,85 @@
+name: "OS 2.2 — Conventional Commit Linting (PR Enforcement)"
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+jobs:
+  commitlint:
+    name: "Lint PR Title & Commit Messages"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup Node.js 22"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: "Install commitlint"
+        run: |
+          npm install --save-dev \
+            @commitlint/cli \
+            @commitlint/config-conventional
+
+      - name: "Write commitlint config"
+        run: |
+          cat > commitlint.config.cjs << 'EOF'
+          module.exports = {
+            extends: ['@commitlint/config-conventional'],
+            rules: {
+              'type-enum': [2, 'always', [
+                'feat', 'fix', 'docs', 'refactor', 'test', 'chore', 'perf'
+              ]],
+              'scope-case': [2, 'always', 'lower-case'],
+              'subject-case': [2, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],
+              'subject-full-stop': [2, 'never', '.'],
+              'header-max-length': [2, 'always', 100],
+              'body-leading-blank': [1, 'always'],
+              'footer-leading-blank': [1, 'always'],
+            }
+          };
+          EOF
+
+      - name: "Lint All Commits in PR"
+        run: |
+          npx commitlint \
+            --from ${{ github.event.pull_request.base.sha }} \
+            --to ${{ github.event.pull_request.head.sha }} \
+            --verbose
+
+      - name: "Lint PR Title"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "$PR_TITLE" | npx commitlint --verbose
+
+      - name: "Post Lint Summary"
+        if: always()
+        run: |
+          echo "## 🔍 Commit Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR**: ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Standard**: Conventional Commits 1.0.0" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Allowed types**: \`feat\`, \`fix\`, \`docs\`, \`refactor\`, \`test\`, \`chore\`, \`perf\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **All commits conform to Conventional Commits 1.0.0**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Commit lint FAILED — PR cannot be merged until all commits are corrected.**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "See `.agents/rules/git_conventions.md` for format requirements." >> $GITHUB_STEP_SUMMARY
+          fi
