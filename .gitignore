@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .pre_standardization_commit
+
+# Environment secrets — never commit
+.env
+.env.*
+!.env.example

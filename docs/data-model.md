@@ -118,3 +118,44 @@ Curriculum tracks MUST be rendered in strict numerical sequence:
 - **Storage Scope**: User sessions wipe transient keys (`academy_library_mock_user`, `academy_builder_mock_user`, `academy_builder_paths_*`) upon logout or session termination via `resetSessionState()`.
 - **Client Cache Isolation**: All transient components reset active learning paths and generated models upon auth session termination.
 
+
+---
+
+## 8. Collection: `agent_messages` (`/agent_messages/{messageId}`)
+
+> **Status**: `ACTIVE` — Live composite index in production. Declared in SSoT Aug 30 2026.
+> **Purpose**: Stores agent session messages for conversational AI features.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `messageId` | **String** (Document ID) | Auto-generated unique message ID. |
+| `sessionId` | **String** | Parent session identifier — used in composite index. |
+| `timestamp` | **Timestamp** | Message creation time — used in composite index. |
+| `role` | **String** | Message sender role: `user`, `assistant`, `system`. |
+| `content` | **String** | Message text content. |
+| `userId` | **String** | Owning user UID for multi-tenant isolation. |
+
+**Composite Index**: `(sessionId ASC, timestamp ASC)` — supports ordered session message retrieval.
+
+**Access Rule**: `request.auth.uid == resource.data.userId`
+
+---
+
+## 9. Collection: `pcap_sessions` (`/pcap_sessions/{sessionId}`)
+
+> **Status**: `ACTIVE` — Live composite index in production. Declared in SSoT Aug 30 2026.
+> **Purpose**: Stores packet capture (PCAP) analysis sessions for network diagnostic features.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `sessionId` | **String** (Document ID) | Auto-generated unique session ID. |
+| `userId` | **String** | Owning user UID — used in composite index. |
+| `createdAt` | **Timestamp** | Session creation time — used in composite index. |
+| `status` | **String** | Session state: `pending`, `processing`, `complete`, `error`. |
+| `fileName` | **String** | Original uploaded PCAP filename. |
+| `gcsUri` | **String** | Cloud Storage URI of the uploaded PCAP file. |
+| `analysisResult` | **Map** | Parsed analysis output (protocol breakdown, anomalies). |
+
+**Composite Index**: `(userId ASC, createdAt DESC)` — supports user session history ordered by recency.
+
+**Access Rule**: `request.auth.uid == resource.data.userId`
