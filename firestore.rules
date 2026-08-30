@@ -1,46 +1,77 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if request is authenticated
+
+    // -----------------------------------------------------------------------
+    // Helper functions
+    // -----------------------------------------------------------------------
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper function to check if user is operating on their own document
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // --- PUBLIC / CATALOG COLLECTIONS ---
-    // Course catalog, assets, and curriculum definitions are public read-only
+    // CMS admin — only the designated operator account may write
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == '9mauro9@gmail.com';
+    }
+
+    // -----------------------------------------------------------------------
+    // PUBLIC CATALOG — world-readable, admin-only writes
+    // -----------------------------------------------------------------------
     match /assets/{assetId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
+      allow read:  if true;
+      allow write: if isAdmin();
     }
 
     match /curriculum_map/{mapId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
+      allow read:  if true;
+      allow write: if isAdmin();
     }
 
     match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
+      allow read:  if true;
+      allow write: if isAdmin();
     }
 
     match /document_chunks/{chunkId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
+      allow read:  if true;
+      allow write: if isAdmin();
     }
 
     match /parent_sections/{sectionId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
+      allow read:  if true;
+      allow write: if isAdmin();
     }
 
-    // --- MULTI-TENANT USER ISOLATION ---
-    // User root profiles and all sub-resources (learning_paths, timelines, notes, drafts, progress)
-    // Strictly isolate by requiring authenticated UID match
+    // -----------------------------------------------------------------------
+    // SYSTEM / CMS AUDIT COLLECTIONS — authenticated read, admin-only write
+    // -----------------------------------------------------------------------
+    match /cms_history/{docId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /cache_invalidations/{docId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /external_progress/{docId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /metadata/{docId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // MULTI-TENANT USER DATA — strict UID isolation
+    // -----------------------------------------------------------------------
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
@@ -49,42 +80,21 @@ service cloud.firestore {
       }
     }
 
-    // Top-level user-owned collections if referenced directly with userId field
     match /user_notes/{noteId} {
-      allow read, write: if isAuthenticated() && 
+      allow read, write: if isAuthenticated() &&
         (resource == null || resource.data.userId == request.auth.uid) &&
         (request.resource == null || request.resource.data.userId == request.auth.uid);
     }
 
     match /timelines/{timelineId} {
-      allow read, write: if isAuthenticated() && 
+      allow read, write: if isAuthenticated() &&
         (resource == null || resource.data.userId == request.auth.uid) &&
         (request.resource == null || request.resource.data.userId == request.auth.uid);
     }
 
-    // --- SYSTEM / SYNC COLLECTIONS ---
-    // Internal metadata, audit logs, and cache controls
-    match /cms_history/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
-    }
-
-    match /cache_invalidations/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
-    }
-
-    match /external_progress/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
-    }
-
-    match /metadata/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.token.admin == true;
-    }
-
-    // Default deny all unmatched collections
+    // -----------------------------------------------------------------------
+    // Default deny — OS 2.2 Pillar 4 (Least Privilege)
+    // -----------------------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
