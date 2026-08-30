@@ -57,11 +57,11 @@ export const Auth: React.FC = () => {
           <div className="auth-logo">
             <BrainCircuit size={28} />
           </div>
-          <h2>{isRegistering ? 'Create Academy Builder Profile' : 'Welcome to Academy Builder'}</h2>
+          <h2>{isRegistering ? 'Create Academy Library Profile' : 'Welcome to Academy Library'}</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
             {isRegistering 
-              ? 'Join the recommendation engine to build personalized learning paths.' 
-              : 'Sign in to access your proficiency dashboard and learning roadmap.'}
+              ? 'Create an account to manage the Academy platform database.' 
+              : 'Sign in to access the course library and content management system.'}
           </p>
         </div>
 
@@ -162,7 +162,7 @@ export const Auth: React.FC = () => {
           {isRegistering ? (
             <>Already have an account? <span onClick={() => setIsRegistering(false)}>Sign In</span></>
           ) : (
-            <>New to Academy Builder? <span onClick={() => setIsRegistering(true)}>Create Profile</span></>
+            <>New to Academy Library? <span onClick={() => setIsRegistering(true)}>Create Profile</span></>
           )}
         </div>
       </div>
