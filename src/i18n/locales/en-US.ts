@@ -1,0 +1,42 @@
+import type { TranslationSchema } from '../types';
+
+export const enUS: TranslationSchema = {
+  nav: {
+    appName: 'Academy Library',
+    tagline: 'Arista Academy Course Library & CMS',
+    disclaimer: 'Disclaimer',
+    sandbox: 'Sandbox',
+    firestoreLive: 'Firestore Live',
+    signOut: 'Sign Out',
+    guest: 'Guest',
+    themeToggle: 'Toggle Light / Dark Theme',
+    language: 'Language',
+  },
+  library: {
+    title: 'Course Catalog & Taxonomy',
+    subtitle: 'Manage, search, and synchronize the centralized Arista course repository.',
+    totalCourses: '{{count}} Courses',
+    totalLessons: '{{count}} Lessons',
+    searchPlaceholder: 'Search courses by title, topic, or code...',
+    filterByCategory: 'Filter Category',
+    filterByTrack: 'Filter Track',
+    allTracks: 'All Tracks',
+    syncSheets: 'Sync with Google Sheets',
+    addNewCourse: 'Add New Course',
+  },
+  common: {
+    search: 'Search...',
+    filter: 'Filter',
+    clear: 'Clear',
+    reset: 'Reset',
+    loading: 'Loading...',
+    error: 'Error occurred',
+    success: 'Success',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    close: 'Close',
+    actions: 'Actions',
+    edit: 'Edit',
+  },
+};

@@ -22,7 +22,8 @@
     "sync-docs": "NODE_PATH=./node_modules node scripts/sync-docs.cjs",
     "test:rules": "jest test/firestore.rules.test.cjs --forceExit --detectOpenHandles",
     "test": "npm run test:rules",
-    "generate-architecture-diagrams": "node scripts/sync-docs.cjs"
+    "generate-architecture-diagrams": "node scripts/sync-docs.cjs",
+    "test:i18n": "jest --testMatch \"<rootDir>/test/i18n.test.cjs\""
   },
   "dependencies": {
     "clsx": "^2.1.1",

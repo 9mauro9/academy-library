@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { subscribeToAuth } from './services/firebaseService';
+import { I18nProvider } from './i18n/I18nContext';
 import { Header } from './components/Header';
 import { Auth } from './components/Auth';
 import { DataManager } from './components/DataManager';
 
-function App() {
+function LibraryMain() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -49,6 +50,14 @@ function App() {
         <DataManager />
       </main>
     </>
+  );
+}
+
+export function App() {
+  return (
+    <I18nProvider>
+      <LibraryMain />
+    </I18nProvider>
   );
 }
 
