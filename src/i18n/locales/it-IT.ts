@@ -4,7 +4,7 @@ export const itIT: TranslationSchema = {
   "nav": {
     "appName": "Academy Library",
     "tagline": "Asset Curriculari & Portale Master CMS",
-    "disclaimer": "Disclaimer",
+    "disclaimer": "Avviso Legale",
     "manualPath": "Percorso Manuale",
     "aiPath": "Percorso IA",
     "sandbox": "Sandbox",
