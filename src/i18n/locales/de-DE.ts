@@ -1,0 +1,42 @@
+import type { TranslationSchema } from '../types';
+
+export const deDE: TranslationSchema = {
+  nav: {
+    appName: 'Academy Library',
+    tagline: 'Arista Academy Kursbibliothek & CMS',
+    disclaimer: 'Haftungsausschluss',
+    sandbox: 'Sandbox',
+    firestoreLive: 'Firestore Live',
+    signOut: 'Abmelden',
+    guest: 'Gast',
+    themeToggle: 'Helles / Dunkles Design umschalten',
+    language: 'Sprache',
+  },
+  library: {
+    title: 'Kurskatalog & Taxonomie',
+    subtitle: 'Verwalten, durchsuchen und synchronisieren Sie das zentrale Arista-Kurs-Repository.',
+    totalCourses: '{{count}} Kurse',
+    totalLessons: '{{count}} Lektionen',
+    searchPlaceholder: 'Kurse nach Titel, Thema oder Code durchsuchen...',
+    filterByCategory: 'Nach Kategorie filtern',
+    filterByTrack: 'Nach Track filtern',
+    allTracks: 'Alle Tracks',
+    syncSheets: 'Mit Google Sheets synchronisieren',
+    addNewCourse: 'Neuen Kurs hinzufügen',
+  },
+  common: {
+    search: 'Suchen...',
+    filter: 'Filtern',
+    clear: 'Löschen',
+    reset: 'Zurücksetzen',
+    loading: 'Laden...',
+    error: 'Ein Fehler ist aufgetreten',
+    success: 'Erfolg',
+    save: 'Speichern',
+    cancel: 'Abbrechen',
+    delete: 'Löschen',
+    close: 'Schließen',
+    actions: 'Aktionen',
+    edit: 'Bearbeiten',
+  },
+};

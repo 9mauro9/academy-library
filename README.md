@@ -110,3 +110,25 @@ All applications across the Academy suite include an accessible, standardized **
 - **Information Classification**: The application contains strictly public, non-confidential, and non-sensitive information, and must not be used to process or store restricted, proprietary, or non-public data.
 
 
+
+---
+
+## 🌍 Multilingual System & Internationalization (i18n)
+
+Compliant with **AGENTIC_ENGINEERING_STANDARD OS 2.2**, the application features a comprehensive, accessible, and reactive multilingual system.
+
+### Supported Locales
+| Language | Locale Code | Country Flag (SVG) | Native Label |
+| :--- | :--- | :--- | :--- |
+| **English (Default)** | `en-US` | 🇺🇸 / 🇬🇧 | English |
+| **Spanish** | `es-ES` | 🇪🇸 Spain | Español |
+| **Italian** | `it-IT` | 🇮🇹 Italy | Italiano |
+| **French** | `fr-FR` | 🇫🇷 France | Français |
+| **German** | `de-DE` | 🇩🇪 Germany | Deutsch |
+| **Polish** | `pl-PL` | 🇵🇱 Poland | Polski |
+
+### Architecture & Engineering Features
+1. **Accessible UI Dropdown**: Embedded in the top-right header utility area with WAI-ARIA 1.2 compliance (`role="listbox"`, `role="option"`, full keyboard navigation).
+2. **Real-Time Cross-App Sync**: Utilizes browser-native `BroadcastChannel('academy_i18n_sync')` combined with `localStorage('academy_preferred_locale')` to instantly sync language preferences across all active tabs in the Academy ecosystem.
+3. **Layout Shift Prevention**: Fluid layouts designed to accommodate German and Polish text expansion (+20% to +35%) without layout breakage or clipping.
+4. **Verification & 1:1 Parity**: 100% key parity across all 6 locale dictionaries verified via `npm run test:i18n`.

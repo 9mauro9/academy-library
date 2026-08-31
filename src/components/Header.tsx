@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { BrainCircuit, Database, ShieldCheck, Sun, Moon, LogOut, User, ShieldAlert } from 'lucide-react';
 import { isSandboxMode, logoutUser } from '../services/firebaseService';
 import { LegalDisclaimerModal } from './LegalDisclaimerModal';
+import { LanguageSelectorDropdown } from './LanguageSelectorDropdown';
+import { useI18n } from '../i18n/I18nContext';
 
 interface HeaderProps {
   currentUser?: any;
@@ -9,6 +11,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
+  const { t } = useI18n();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [theme, setTheme] = React.useState(() => {
     const saved = localStorage.getItem('academy_library_theme') || localStorage.getItem('academy_builder_theme');
@@ -46,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
           </div>
           <div className="brand-title">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <h1>Academy Library</h1>
+              <h1>{t('nav.appName')}</h1>
               <button
                 type="button"
                 onClick={() => setShowDisclaimer(true)}
@@ -70,62 +73,63 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
                 }}
               >
                 <ShieldAlert size={10} />
-                <span>Disclaimer</span>
+                <span>{t('nav.disclaimer')}</span>
               </button>
             </div>
-            <p>Arista Academy Course Library & CMS</p>
+            <p>{t('nav.tagline')}</p>
           </div>
         </div>
 
-      <div className="controls-section">
+        <div className="controls-section">
+          <div className="control-group" style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <LanguageSelectorDropdown />
 
-        <div className="control-group" style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {sandbox ? (
-            <span className="fit-badge ok" style={{ background: 'var(--break-bg)', color: 'var(--break-text)' }} title="Local Sandbox offline simulator">
-              <Database size={10} style={{ marginRight: '0.15rem' }} />
-              Sandbox
-            </span>
-          ) : (
-            <span className="fit-badge ok" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-color)' }} title="Connected to Cloud Firestore">
-              <ShieldCheck size={10} style={{ marginRight: '0.15rem' }} />
-              Firestore Live
-            </span>
-          )}
-
-          {currentUser && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              <User size={12} />
-              <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {currentUser.email || (currentUser.isAnonymous ? 'Guest' : 'User')}
+            {sandbox ? (
+              <span className="fit-badge ok" style={{ background: 'var(--break-bg)', color: 'var(--break-text)' }} title="Local Sandbox offline simulator">
+                <Database size={10} style={{ marginRight: '0.15rem' }} />
+                {t('nav.sandbox')}
               </span>
-              <button
-                className="btn-action"
-                onClick={handleLogout}
-                style={{ padding: '0.25rem 0.5rem', height: '26px', fontSize: '0.7rem' }}
-                title="Sign out & wipe session state"
-              >
-                <LogOut size={12} style={{ marginRight: '0.2rem' }} />
-                Sign Out
-              </button>
-            </div>
-          )}
+            ) : (
+              <span className="fit-badge ok" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-color)' }} title="Connected to Cloud Firestore">
+                <ShieldCheck size={10} style={{ marginRight: '0.15rem' }} />
+                {t('nav.firestoreLive')}
+              </span>
+            )}
 
-          <button 
-            className="btn-action" 
-            id="themeToggleBtn"
-            onClick={toggleTheme} 
-            style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }} 
-            title="Toggle Light/Dark Theme"
-          >
-            {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-          </button>
+            {currentUser && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                <User size={12} />
+                <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser.email || (currentUser.isAnonymous ? t('nav.guest') : 'User')}
+                </span>
+                <button
+                  className="btn-action"
+                  onClick={handleLogout}
+                  style={{ padding: '0.25rem 0.5rem', height: '26px', fontSize: '0.7rem' }}
+                  title="Sign out & wipe session state"
+                >
+                  <LogOut size={12} style={{ marginRight: '0.2rem' }} />
+                  {t('nav.signOut')}
+                </button>
+              </div>
+            )}
+
+            <button 
+              className="btn-action" 
+              id="themeToggleBtn"
+              onClick={toggleTheme} 
+              style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }} 
+              title={t('nav.themeToggle')}
+            >
+              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
-    <LegalDisclaimerModal 
-      isOpen={showDisclaimer} 
-      onClose={() => setShowDisclaimer(false)} 
-    />
-  </>
+      </header>
+      <LegalDisclaimerModal 
+        isOpen={showDisclaimer} 
+        onClose={() => setShowDisclaimer(false)} 
+      />
+    </>
   );
 };
