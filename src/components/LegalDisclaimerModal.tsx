@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { ShieldAlert, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useI18n } from '../i18n/I18nContext';
 
 interface LegalDisclaimerModalProps {
   isOpen: boolean;
@@ -7,6 +8,8 @@ interface LegalDisclaimerModalProps {
 }
 
 export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useI18n();
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -86,10 +89,10 @@ export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOp
             </div>
             <div>
               <h2 id="disclaimer-title" style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                Legal Disclaimer & Terms of Use
+                {t('disclaimerModal.title')}
               </h2>
               <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Experimental Research & Evaluation Notice
+                {t('disclaimerModal.subtitle')}
               </p>
             </div>
           </div>
@@ -135,61 +138,61 @@ export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOp
           }}>
             <AlertTriangle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-              <strong>Notice:</strong> Please review the following terms and disclaimers before using this software application.
+              {t('disclaimerModal.notice')}
             </div>
           </div>
 
           <div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-              1. Nature of Software
+              {t('disclaimerModal.s1Title')}
             </h4>
             <p style={{ margin: 0 }}>
-              This software constitutes an experimental, non-production build provided solely for internal testing, evaluation, and investigational use cases.
+              {t('disclaimerModal.s1Body')}
             </p>
           </div>
 
           <div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-              2. Assumption of Risk
+              {t('disclaimerModal.s2Title')}
             </h4>
             <p style={{ margin: 0 }}>
-              End-users assume full, sole, and unconditional responsibility and liability for any utilization, deployment, application, or misuse of the software and its outputs.
+              {t('disclaimerModal.s2Body')}
             </p>
           </div>
 
           <div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-              3. No Warranty & Data Accuracy
+              {t('disclaimerModal.s3Title')}
             </h4>
             <p style={{ margin: 0 }}>
-              The application is provided strictly &lsquo;as-is&rsquo; and &lsquo;as-available&rsquo;, without warranties of any kind. It may contain defects, technical bugs, inaccuracies, and may produce erroneous calculations, data, or output.
+              {t('disclaimerModal.s3Body')}
             </p>
           </div>
 
           <div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-              4. Development & Support Status
+              {t('disclaimerModal.s4Title')}
             </h4>
             <p style={{ margin: 0 }}>
-              The system is actively under development, highly volatile, and explicitly unsupported by any formal service level agreements (SLAs) or dedicated maintenance channels.
+              {t('disclaimerModal.s4Body')}
             </p>
           </div>
 
           <div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-              5. Independence & Affiliation Disclaimer
+              {t('disclaimerModal.s5Title')}
             </h4>
             <p style={{ margin: 0 }}>
-              This project is an independent, third-party initiative and maintains no legal, commercial, operational, or content-related affiliation, endorsement, or linkage to Arista Networks, Inc. or any other original equipment manufacturer.
+              {t('disclaimerModal.s5Body')}
             </p>
           </div>
 
           <div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-              6. Information Classification
+              {t('disclaimerModal.s6Title')}
             </h4>
             <p style={{ margin: 0 }}>
-              The application contains strictly public, non-confidential, and non-sensitive information, and must not be used to process or store restricted, proprietary, or non-public data.
+              {t('disclaimerModal.s6Body')}
             </p>
           </div>
         </div>
@@ -217,7 +220,7 @@ export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOp
             }}
           >
             <CheckCircle size={14} />
-            <span>I Understand & Acknowledge</span>
+            <span>{t('disclaimerModal.accept')}</span>
           </button>
         </div>
       </div>

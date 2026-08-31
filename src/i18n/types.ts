@@ -13,24 +13,32 @@ export interface TranslationSchema {
     appName: string;
     tagline: string;
     disclaimer: string;
+    manualPath: string;
+    aiPath: string;
     sandbox: string;
     firestoreLive: string;
-    signOut: string;
     guest: string;
+    signOut: string;
     themeToggle: string;
     language: string;
   };
-  library: {
+  disclaimerModal: {
     title: string;
     subtitle: string;
-    totalCourses: string;
-    totalLessons: string;
-    searchPlaceholder: string;
-    filterByCategory: string;
-    filterByTrack: string;
-    allTracks: string;
-    syncSheets: string;
-    addNewCourse: string;
+    notice: string;
+    s1Title: string;
+    s1Body: string;
+    s2Title: string;
+    s2Body: string;
+    s3Title: string;
+    s3Body: string;
+    s4Title: string;
+    s4Body: string;
+    s5Title: string;
+    s5Body: string;
+    s6Title: string;
+    s6Body: string;
+    accept: string;
   };
   common: {
     search: string;
@@ -42,9 +50,6 @@ export interface TranslationSchema {
     success: string;
     save: string;
     cancel: string;
-    delete: string;
     close: string;
-    actions: string;
-    edit: string;
   };
 }
