@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-describe('Academy Insight - i18n Translation Completeness & Parity', () => {
+describe('Academy Library - i18n Translation Completeness & Parity', () => {
   const localesDir = path.join(__dirname, '../src/i18n/locales');
   const localeFiles = ['en-US.ts', 'es-ES.ts', 'it-IT.ts', 'fr-FR.ts', 'de-DE.ts', 'pl-PL.ts'];
 
