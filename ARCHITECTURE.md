@@ -98,3 +98,22 @@ Compliant with **AGENTIC_ENGINEERING_STANDARD OS 2.2**, the application features
 2. **Real-Time Cross-App Sync**: Utilizes browser-native `BroadcastChannel('academy_i18n_sync')` combined with `localStorage('academy_preferred_locale')` to instantly sync language preferences across all active tabs in the Academy ecosystem.
 3. **Layout Shift Prevention**: Fluid layouts designed to accommodate German and Polish text expansion (+20% to +35%) without layout breakage or clipping.
 4. **Verification & 1:1 Parity**: 100% key parity across all 6 locale dictionaries verified via `npm run test:i18n`.
+
+### 🏛️ Academy Header Utility & Language Selector UI Specification
+All Academy applications (Timeliner, Toolkit, Builder, Insight, Library) adhere strictly to the following unified design token and component standard:
+
+| Element | Specification & Design Token | Behavior & Theming |
+| :--- | :--- | :--- |
+| **Button Container** | Height: `32px` (`h-8`), Radius: `8px` (`rounded-lg`), Padding: `0 0.6rem` | Flex align center, gap `0.45rem`, shadow `0 1px 2px rgba(0,0,0,0.05)` |
+| **Dark Theme Button** | BG: `var(--bg-tertiary, #162544)`, Border: `var(--border-color, rgba(115,138,150,0.2))` | Hover: `rgba(255,255,255,0.08)`, Border `rgba(115,138,150,0.4)` |
+| **Light Theme Button** | BG: `var(--bg-tertiary, #f1f5f9)`, Border: `var(--border-color, #e2e8f0)` | Hover: `#ffffff`, Border `#cbd5e1`, full button bounding coverage |
+| **Open State (`aria-expanded="true"`)** | Dark: border `#06b6d4`, ring `2px rgba(6,182,212,0.25)`; Light: border `#146095`, ring `2px rgba(20,96,149,0.2)` | Active focus/open illumination across light and dark modes |
+| **Globe Icon** | Lucide `globe` 13px | Dark: `#22d3ee` (cyan-400); Light: `#0284c7` (sky-600) |
+| **Chevron Indicator** | Lucide `chevron-down` 12px, transition `transform 0.15s ease, color 0.15s ease` | **Closed**: points down (`text-muted`). **Open**: rotates 180° into upward caret (`rotate(180deg)`) and illuminates cyan (`#22d3ee` / `#0284c7`) |
+| **Dropdown Menu (Listbox)** | Width: `180px` (`w-44`), Radius: `12px` (`rounded-xl`), Margin-top: `6px`, Blur: `12px` | Dark: `#0f182c/95`, border `rgba(115,138,150,0.3)`. Light: `#ffffff/95`, border `#e2e8f0` |
+| **Option Hover** | Dark: `rgba(255,255,255,0.08)` text `#ffffff`; Light: `rgba(15,23,42,0.06)` text `#0f172a` | High-contrast highlight across entire option width |
+| **Option Selected** | Dark: `rgba(14,165,233,0.15)` text `#38bdf8` bold; Light: `rgba(14,165,233,0.12)` text `#0369a1` bold | Includes matching `check` icon (14px) and 2-letter uppercase ISO code |
+
+#### Engineering Directives
+- **Declarative Animation Over Element Mutation**: Chevron arrow rotations MUST be driven declaratively via CSS class/attribute selectors (`.lang-dropdown-btn[aria-expanded="true"] .lang-chevron { transform: rotate(180deg); }` or React state bindings) to prevent orphaned DOM node reference bugs during dynamic icon replacement.
+- **Scoped DOM Icon Creation**: When rendering dynamic icon content inside dropdown options, helper methods MUST use scoped parent queries (`safeCreateIconsForParent(listbox)`) rather than unbounded global document scans to eliminate redundant DOM churn and detached node leaks.

@@ -102,26 +102,29 @@ export const LanguageSelectorDropdown: React.FC = () => {
         className="btn-action"
         style={{
           height: '32px',
-          padding: '0 0.5rem',
+          padding: '0 0.6rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
+          gap: '0.45rem',
           fontSize: '0.75rem',
           fontWeight: 600,
+          borderRadius: '8px',
+          borderColor: isOpen ? 'rgba(6, 182, 212, 0.5)' : undefined,
+          boxShadow: isOpen ? '0 0 0 2px rgba(6, 182, 212, 0.25)' : undefined,
         }}
         title={`${t('nav.language')} (${locale})`}
       >
-        <Globe size={13} style={{ color: 'var(--accent-color, #146095)' }} aria-hidden="true" />
+        <Globe size={13} style={{ color: '#22d3ee' }} className="shrink-0" aria-hidden="true" />
         <FlagIcon locale={locale} size={15} />
-        <span style={{ textTransform: 'uppercase', fontSize: '0.7rem' }}>
+        <span style={{ textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.05em' }}>
           {locale.split('-')[0]}
         </span>
         <ChevronDown
           size={12}
           style={{
-            color: 'var(--text-muted, #738a96)',
+            color: isOpen ? '#22d3ee' : 'var(--text-muted, #738a96)',
             transform: isOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.15s ease',
+            transition: 'transform 0.15s ease, color 0.15s ease',
           }}
           aria-hidden="true"
         />
@@ -137,18 +140,20 @@ export const LanguageSelectorDropdown: React.FC = () => {
           style={{
             position: 'absolute',
             right: 0,
-            marginTop: '4px',
+            marginTop: '6px',
             width: '180px',
             background: 'var(--bg-secondary, #0f182c)',
             border: '1px solid var(--border-color, rgba(115, 138, 150, 0.3))',
-            borderRadius: '8px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
             padding: '4px 0',
             zIndex: 100,
             listStyle: 'none',
-            marginBlockStart: '4px',
+            marginBlockStart: '6px',
             marginBlockEnd: '0',
             paddingInlineStart: '0',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
           }}
         >
           {supportedLocales.map((loc, index) => {
@@ -165,22 +170,23 @@ export const LanguageSelectorDropdown: React.FC = () => {
                 onClick={() => handleSelect(loc.code)}
                 onMouseEnter={() => setFocusedIndex(index)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '8px 12px',
                   fontSize: '0.75rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   cursor: 'pointer',
                   background: isSelected
-                    ? 'rgba(20, 96, 149, 0.2)'
+                    ? 'rgba(14, 165, 233, 0.15)'
                     : isFocused
-                    ? 'rgba(255, 255, 255, 0.05)'
+                    ? 'var(--bg-tertiary, rgba(255, 255, 255, 0.08))'
                     : 'transparent',
                   color: isSelected
-                    ? '#7396bf'
+                    ? '#38bdf8'
                     : 'var(--text-primary, #f9fafb)',
                   fontWeight: isSelected ? 700 : 400,
                   outline: 'none',
+                  transition: 'background 0.1s ease, color 0.1s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -189,7 +195,7 @@ export const LanguageSelectorDropdown: React.FC = () => {
                 </div>
 
                 {isSelected ? (
-                  <Check size={14} style={{ color: '#4473a9' }} aria-hidden="true" />
+                  <Check size={14} style={{ color: '#38bdf8' }} aria-hidden="true" />
                 ) : (
                   <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted, #738a96)' }}>
                     {loc.code.split('-')[0]}
