@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.1.0](https://github.com/9mauro9/academy-library/compare/v1.0.0...v1.1.0) (2026-09-05)
+
+
+### Features
+
+* **auth:** replace email/password auth with Google Sign-In ([df6b76a](https://github.com/9mauro9/academy-library/commit/df6b76ace0310d322189ddf45b8d8ea34645625e))
+* **auth:** replace email/password auth with Google Sign-In ([a471883](https://github.com/9mauro9/academy-library/commit/a4718839cd1c403c824c25b5588353f825ba18c6))
+* **cms:** OS 2.2 structural upgrade — Firestore-native, admin write guard ([c3acd9c](https://github.com/9mauro9/academy-library/commit/c3acd9c3d5ba65c3f8aaaa9203964bfac296ebd3))
+* **cms:** OS 2.2 structural upgrade — Firestore-native, Google auth, admin write guard ([5e1d99f](https://github.com/9mauro9/academy-library/commit/5e1d99f42353eeabe09f90f2a51624e0b0f35df2))
+* **cms:** restore original CMS portal with Google auth gate ([0f2d3f0](https://github.com/9mauro9/academy-library/commit/0f2d3f06a82a950ea863484e2286ce66fc528183))
+* **cms:** restore original CMS portal with Google auth gate ([bc9022b](https://github.com/9mauro9/academy-library/commit/bc9022be5af4863eb1d949a0d437462c73d68631))
+* **i18n:** add Brazilian Portuguese (pt-BR) language support (OS 2.2) ([f15312a](https://github.com/9mauro9/academy-library/commit/f15312a01c84e66959e0cc9a7eaec40d3921e24c))
+* **i18n:** implement multilingual system and dynamic subagent standards ([bc916d4](https://github.com/9mauro9/academy-library/commit/bc916d47ffc6e6d458ffae3ba5ba3dcf18360e3c))
+* **i18n:** implement multilingual system and dynamic subagent standards ([5947bc3](https://github.com/9mauro9/academy-library/commit/5947bc3fc3acc517e616a1dbc40b3a248874f249))
+
+
+### Bug Fixes
+
+* **i18n:** expand comprehensive full-screen translations and legal disclaimer modal ([b98ca9c](https://github.com/9mauro9/academy-library/commit/b98ca9c78eea52cbb1366a1e311b655bf55bc08d))
+* **i18n:** localize disclaimer trigger badge to Avviso Legale in Italian ([4ac7d64](https://github.com/9mauro9/academy-library/commit/4ac7d6401869147f81b1f2b5b95fed8c1e15d831))
+* **i18n:** standardize language selector dropdown styling and UI spec (OS 2.2) ([6b82fef](https://github.com/9mauro9/academy-library/commit/6b82fefcece1ddc855c2b2ebc4e041de5160f308))
+* **meta:** correct browser title and package name from Academy Builder to Academy Library ([5f5ec53](https://github.com/9mauro9/academy-library/commit/5f5ec5347f0bf1d7edbd8c6c17876c1e0a07ebd1))
+* **meta:** correct browser title and package name from Academy Builder to Academy Library ([d4ae716](https://github.com/9mauro9/academy-library/commit/d4ae716060a26e898772e59817d3e6b2550af566))
+* **ui:** replace Academy Builder interface with DataManager CMS view ([ee9c697](https://github.com/9mauro9/academy-library/commit/ee9c697a9e00b77fa336dc7d5ead350708826583))
+* **ui:** replace Academy Builder interface with DataManager CMS view ([a83e3f6](https://github.com/9mauro9/academy-library/commit/a83e3f681fe00264adddb4998be370e3b15f6b74))
+
 ## 1.0.0 (2026-08-30)
 
 
