@@ -3,9 +3,9 @@ const path = require('path');
 
 describe('Academy Library - i18n Translation Completeness & Parity', () => {
   const localesDir = path.join(__dirname, '../src/i18n/locales');
-  const localeFiles = ['en-US.ts', 'es-ES.ts', 'it-IT.ts', 'fr-FR.ts', 'de-DE.ts', 'pl-PL.ts'];
+  const localeFiles = ['en-US.ts', 'es-ES.ts', 'it-IT.ts', 'fr-FR.ts', 'de-DE.ts', 'pt-BR.ts', 'pl-PL.ts'];
 
-  test('All 6 required locale files exist', () => {
+  test('All 7 required locale files exist', () => {
     localeFiles.forEach(file => {
       const filePath = path.join(localesDir, file);
       expect(fs.existsSync(filePath)).toBe(true);

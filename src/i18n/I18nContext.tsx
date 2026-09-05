@@ -5,6 +5,7 @@ import { esES } from './locales/es-ES';
 import { itIT } from './locales/it-IT';
 import { frFR } from './locales/fr-FR';
 import { deDE } from './locales/de-DE';
+import { ptBR } from './locales/pt-BR';
 import { plPL } from './locales/pl-PL';
 
 export const SUPPORTED_LOCALES: LocaleConfig[] = [
@@ -13,6 +14,7 @@ export const SUPPORTED_LOCALES: LocaleConfig[] = [
   { code: 'it-IT', name: 'Italian', nativeName: 'Italiano', flagCode: 'IT', dateFormat: 'DD/MM/YYYY' },
   { code: 'fr-FR', name: 'French', nativeName: 'Français', flagCode: 'FR', dateFormat: 'DD/MM/YYYY' },
   { code: 'de-DE', name: 'German', nativeName: 'Deutsch', flagCode: 'DE', dateFormat: 'DD.MM.YYYY' },
+  { code: 'pt-BR', name: 'Portuguese', nativeName: 'Português', flagCode: 'BR', dateFormat: 'DD/MM/YYYY', displayCode: 'BR' },
   { code: 'pl-PL', name: 'Polish', nativeName: 'Polski', flagCode: 'PL', dateFormat: 'DD.MM.YYYY' },
 ];
 
@@ -22,6 +24,7 @@ const LOCALES_MAP: Record<SupportedLocale, TranslationSchema> = {
   'it-IT': itIT,
   'fr-FR': frFR,
   'de-DE': deDE,
+  'pt-BR': ptBR,
   'pl-PL': plPL,
 };
 
@@ -42,6 +45,7 @@ function getInitialLocale(): SupportedLocale {
     if (browserLang.startsWith('it')) return 'it-IT';
     if (browserLang.startsWith('fr')) return 'fr-FR';
     if (browserLang.startsWith('de')) return 'de-DE';
+    if (browserLang.startsWith('pt')) return 'pt-BR';
     if (browserLang.startsWith('pl')) return 'pl-PL';
   } catch {}
 
@@ -68,7 +72,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLocaleState(newLocale);
     try {
       localStorage.setItem(STORAGE_KEY, newLocale);
-      document.documentElement.lang = newLocale.split('-')[0];
+      document.documentElement.lang = newLocale === 'pt-BR' ? 'pt-BR' : newLocale.split('-')[0];
     } catch {}
 
     try {
@@ -81,7 +85,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = locale.split('-')[0];
+    document.documentElement.lang = locale === 'pt-BR' ? 'pt-BR' : locale.split('-')[0];
 
     let channel: BroadcastChannel | null = null;
     try {
@@ -90,7 +94,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         channel.onmessage = (event) => {
           if (event.data?.type === 'LOCALE_CHANGED' && event.data?.locale in LOCALES_MAP) {
             setLocaleState(event.data.locale);
-            document.documentElement.lang = event.data.locale.split('-')[0];
+            document.documentElement.lang = event.data.locale === 'pt-BR' ? 'pt-BR' : event.data.locale.split('-')[0];
           }
         };
       }
@@ -99,7 +103,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue && e.newValue in LOCALES_MAP) {
         setLocaleState(e.newValue as SupportedLocale);
-        document.documentElement.lang = e.newValue.split('-')[0];
+        document.documentElement.lang = e.newValue === 'pt-BR' ? 'pt-BR' : e.newValue.split('-')[0];
       }
     };
 

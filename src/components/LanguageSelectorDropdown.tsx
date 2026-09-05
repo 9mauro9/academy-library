@@ -5,7 +5,7 @@ import { FlagIcon } from '../i18n/flags';
 import type { SupportedLocale } from '../i18n/types';
 
 export const LanguageSelectorDropdown: React.FC = () => {
-  const { locale, setLocale, supportedLocales, t } = useI18n();
+  const { locale, setLocale, supportedLocales, currentLocaleConfig, t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -117,7 +117,7 @@ export const LanguageSelectorDropdown: React.FC = () => {
         <Globe size={13} style={{ color: '#22d3ee' }} className="shrink-0" aria-hidden="true" />
         <FlagIcon locale={locale} size={15} />
         <span style={{ textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.05em' }}>
-          {locale.split('-')[0]}
+          {currentLocaleConfig?.displayCode || (locale === 'pt-BR' ? 'BR' : locale.split('-')[0])}
         </span>
         <ChevronDown
           size={12}
@@ -198,7 +198,7 @@ export const LanguageSelectorDropdown: React.FC = () => {
                   <Check size={14} style={{ color: '#38bdf8' }} aria-hidden="true" />
                 ) : (
                   <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted, #738a96)' }}>
-                    {loc.code.split('-')[0]}
+                    {loc.displayCode || (loc.code === 'pt-BR' ? 'BR' : loc.code.split('-')[0])}
                   </span>
                 )}
               </li>

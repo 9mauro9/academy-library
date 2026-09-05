@@ -99,6 +99,21 @@ export const PLFlag: React.FC<FlagProps> = ({ className = '', size = 18 }) => (
   </svg>
 );
 
+export const BRFlag: React.FC<FlagProps> = ({ className = '', size = 18 }) => (
+  <svg
+    width={size}
+    height={Math.round(size * 0.75)}
+    viewBox="0 0 640 480"
+    className={`inline-block rounded-xs shadow-xs shrink-0 ${className}`}
+    aria-hidden="true"
+  >
+    <path fill="#009b3a" d="M0 0h640v480H0z"/>
+    <path fill="#fedf00" d="M320 40 600 240 320 440 40 240z"/>
+    <circle cx="320" cy="240" r="120" fill="#002776"/>
+    <path fill="#fff" d="M205 255a120 120 0 0 1 228-30 122 122 0 0 0-228 30z"/>
+  </svg>
+);
+
 export const FlagIcon: React.FC<{ locale: SupportedLocale; size?: number; className?: string }> = ({
   locale,
   size = 18,
@@ -113,6 +128,8 @@ export const FlagIcon: React.FC<{ locale: SupportedLocale; size?: number; classN
       return <FRFlag size={size} className={className} />;
     case 'de-DE':
       return <DEFlag size={size} className={className} />;
+    case 'pt-BR':
+      return <BRFlag size={size} className={className} />;
     case 'pl-PL':
       return <PLFlag size={size} className={className} />;
     case 'en-US':

@@ -38,7 +38,7 @@ Educational assets, curriculum maps, course slide decks, lab topology diagrams, 
   - **Firebase Cloud Functions**: 3-minute debounce lock (`metadata/build_state`) triggering GitHub Actions repository dispatch events (`firestore_data_updated`).
   - **Firebase Hosting**: High-speed edge CDN deployment on target `academy-library`.
 * **Internationalization (i18n)**:
-  - 6 supported locales: English (`en-US`), Spanish (`es-ES`), Italian (`it-IT`), French (`fr-FR`), German (`de-DE`), Polish (`pl-PL`).
+  - 7 supported locales: English (`en-US`), Spanish (`es-ES`), Italian (`it-IT`), French (`fr-FR`), German (`de-DE`), Portuguese (`pt-BR`), Polish (`pl-PL`).
   - Cross-tab `BroadcastChannel('academy_i18n_sync')` and WAI-ARIA 1.2 compliant selector.
 
 ---

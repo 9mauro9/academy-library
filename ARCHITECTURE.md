@@ -91,13 +91,14 @@ Compliant with **AGENTIC_ENGINEERING_STANDARD OS 2.2**, the application features
 | **Italian** | `it-IT` | 🇮🇹 Italy | Italiano |
 | **French** | `fr-FR` | 🇫🇷 France | Français |
 | **German** | `de-DE` | 🇩🇪 Germany | Deutsch |
+| **Portuguese (Brazil)** | `pt-BR` | 🇧🇷 Brazil | Português |
 | **Polish** | `pl-PL` | 🇵🇱 Poland | Polski |
 
 ### Architecture & Engineering Features
 1. **Accessible UI Dropdown**: Embedded in the top-right header utility area with WAI-ARIA 1.2 compliance (`role="listbox"`, `role="option"`, full keyboard navigation).
 2. **Real-Time Cross-App Sync**: Utilizes browser-native `BroadcastChannel('academy_i18n_sync')` combined with `localStorage('academy_preferred_locale')` to instantly sync language preferences across all active tabs in the Academy ecosystem.
 3. **Layout Shift Prevention**: Fluid layouts designed to accommodate German and Polish text expansion (+20% to +35%) without layout breakage or clipping.
-4. **Verification & 1:1 Parity**: 100% key parity across all 6 locale dictionaries verified via `npm run test:i18n`.
+4. **Verification & 1:1 Parity**: 100% key parity across all 7 locale dictionaries verified via `npm run test:i18n`.
 
 ### 🏛️ Academy Header Utility & Language Selector UI Specification
 All Academy applications (Timeliner, Toolkit, Builder, Insight, Library) adhere strictly to the following unified design token and component standard:

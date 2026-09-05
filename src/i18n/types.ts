@@ -1,4 +1,4 @@
-export type SupportedLocale = 'en-US' | 'es-ES' | 'it-IT' | 'fr-FR' | 'de-DE' | 'pl-PL';
+export type SupportedLocale = 'en-US' | 'es-ES' | 'it-IT' | 'fr-FR' | 'de-DE' | 'pt-BR' | 'pl-PL';
 
 export interface LocaleConfig {
   code: SupportedLocale;
@@ -6,6 +6,7 @@ export interface LocaleConfig {
   nativeName: string;
   flagCode: string;
   dateFormat: string;
+  displayCode?: string;
 }
 
 export interface TranslationSchema {

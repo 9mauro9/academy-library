@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "appName": "Academy Library",
+    "tagline": "Curriculum Assets & Master CMS Portal",
+    "disclaimer": "Disclaimer",
+    "manualPath": "Manual Path",
+    "aiPath": "AI Path",
+    "sandbox": "Sandbox",
+    "firestoreLive": "Firestore Live",
+    "guest": "Guest",
+    "signOut": "Sign Out",
+    "themeToggle": "Toggle Light/Dark Theme",
+    "language": "Language"
+  },
+  "disclaimerModal": {
+    "title": "Legal Disclaimer & Terms of Use",
+    "subtitle": "Experimental Research & Evaluation Notice",
+    "notice": "Notice: Please review the following terms and disclaimers before using this software application.",
+    "s1Title": "1. Nature of Software",
+    "s1Body": "This software constitutes an experimental, non-production build provided solely for internal testing, evaluation, and investigational use cases.",
+    "s2Title": "2. Assumption of Risk",
+    "s2Body": "End-users assume full, sole, and unconditional responsibility and liability for any utilization, deployment, application, or misuse of the software and its outputs.",
+    "s3Title": "3. No Warranty & Data Accuracy",
+    "s3Body": "The application is provided strictly 'as-is' and 'as-available', without warranties of any kind. It may contain defects, technical bugs, inaccuracies, and may produce erroneous calculations, data, or output.",
+    "s4Title": "4. Development & Support Status",
+    "s4Body": "The system is actively under development, highly volatile, and explicitly unsupported by any formal service level agreements (SLAs) or dedicated maintenance channels.",
+    "s5Title": "5. Independence & Affiliation Disclaimer",
+    "s5Body": "This project is an independent, third-party initiative and maintains no legal, commercial, operational, or content-related affiliation, endorsement, or linkage to Arista Networks, Inc. or any other original equipment manufacturer.",
+    "s6Title": "6. Information Classification",
+    "s6Body": "The application contains strictly public, non-confidential, and non-sensitive information, and must not be used to process or store restricted, proprietary, or non-public data.",
+    "accept": "I Understand & Acknowledge"
+  },
+  "common": {
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "reset": "Reset",
+    "loading": "Loading...",
+    "error": "Error occurred",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close"
+  }
+}
