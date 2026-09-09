@@ -1,27 +1,24 @@
-import React, { useState } from 'react';
-import { BrainCircuit, Database, ShieldCheck, Sun, Moon, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BrainCircuit, ShieldCheck, Database, Moon, Sun, ShieldAlert } from 'lucide-react';
 import { UserProfileButton } from '@academy/auth-core';
-import { isSandboxMode, logoutUser } from '../services/firebaseService';
-import { LegalDisclaimerModal } from './LegalDisclaimerModal';
-import { LanguageSelectorDropdown } from './LanguageSelectorDropdown';
-import { useI18n } from '../i18n/I18nContext';
+import { isSandboxMode, logoutUser } from '../../services/firebaseService';
+import { LegalDisclaimerModal } from '../LegalDisclaimerModal';
+import { LanguageSelectorDropdown } from '../LanguageSelectorDropdown';
+import { useI18n } from '../../i18n/I18nContext';
 
-interface HeaderProps {
-  currentUser?: any;
-  isSuperAdmin?: boolean;
-  role?: string;
-  onLogout?: () => void;
+export interface TopBarProps {
+  onSignOutComplete?: () => void;
+  className?: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onSignOutComplete, className = '' }) => {
   const { t } = useI18n();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [theme, setTheme] = React.useState(() => {
-    const saved = localStorage.getItem('academy_library_theme') || localStorage.getItem('academy_builder_theme');
-    return saved || 'dark';
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('academy_library_theme') || 'dark';
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (theme === 'light') {
       document.body.classList.add('light-theme');
     } else {
@@ -31,13 +28,13 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLogout = async () => {
+  const handleSignOutComplete = async () => {
     await logoutUser();
-    if (onLogout) {
-      onLogout();
+    if (onSignOutComplete) {
+      onSignOutComplete();
     }
   };
 
@@ -45,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
   return (
     <>
-      <header className="app-header">
+      <header className={`app-header ${className}`}>
         <div className="brand-section">
           <div className="logo-container">
             <BrainCircuit size={16} />
@@ -72,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   gap: '3px',
                   letterSpacing: '0.02em',
                   textTransform: 'uppercase',
-                  lineHeight: '1.2'
+                  lineHeight: '1.2',
                 }}
               >
                 <ShieldAlert size={10} />
@@ -84,33 +81,50 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         </div>
 
         <div className="controls-section">
-          <div className="control-group" style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            className="control-group"
+            style={{
+              marginLeft: '1rem',
+              borderLeft: '1px solid var(--border-color)',
+              paddingLeft: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
             <LanguageSelectorDropdown />
 
             {sandbox ? (
-              <span className="fit-badge ok" style={{ background: 'var(--break-bg)', color: 'var(--break-text)' }} title="Local Sandbox offline simulator">
+              <span
+                className="fit-badge ok"
+                style={{ background: 'var(--break-bg)', color: 'var(--break-text)' }}
+                title="Local Sandbox offline simulator"
+              >
                 <Database size={10} style={{ marginRight: '0.15rem' }} />
                 {t('nav.sandbox')}
               </span>
             ) : (
-              <span className="fit-badge ok" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-color)' }} title="Connected to Cloud Firestore">
+              <span
+                className="fit-badge ok"
+                style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-color)' }}
+                title="Connected to Cloud Firestore"
+              >
                 <ShieldCheck size={10} style={{ marginRight: '0.15rem' }} />
                 {t('nav.firestoreLive')}
               </span>
             )}
 
-            {/* Universal Academy Profile Component */}
+            {/* Universal Profile Button */}
             <UserProfileButton
               appId="library"
-              onSignOutComplete={handleLogout}
+              onSignOutComplete={handleSignOutComplete}
             />
 
-
-            <button 
-              className="btn-action" 
+            <button
+              className="btn-action"
               id="themeToggleBtn"
-              onClick={toggleTheme} 
-              style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }} 
+              onClick={toggleTheme}
+              style={{ width: '32px', height: '32px', justifyContent: 'center', padding: '0' }}
               title={t('nav.themeToggle')}
             >
               {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
@@ -118,9 +132,9 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           </div>
         </div>
       </header>
-      <LegalDisclaimerModal 
-        isOpen={showDisclaimer} 
-        onClose={() => setShowDisclaimer(false)} 
+      <LegalDisclaimerModal
+        isOpen={showDisclaimer}
+        onClose={() => setShowDisclaimer(false)}
       />
     </>
   );

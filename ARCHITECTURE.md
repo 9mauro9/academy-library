@@ -118,3 +118,17 @@ All Academy applications (Timeliner, Toolkit, Builder, Insight, Library) adhere 
 #### Engineering Directives
 - **Declarative Animation Over Element Mutation**: Chevron arrow rotations MUST be driven declaratively via CSS class/attribute selectors (`.lang-dropdown-btn[aria-expanded="true"] .lang-chevron { transform: rotate(180deg); }` or React state bindings) to prevent orphaned DOM node reference bugs during dynamic icon replacement.
 - **Scoped DOM Icon Creation**: When rendering dynamic icon content inside dropdown options, helper methods MUST use scoped parent queries (`safeCreateIconsForParent(listbox)`) rather than unbounded global document scans to eliminate redundant DOM churn and detached node leaks.
+
+### 👤 Universal User Profile Dropdown Component Specification (OS 2.2)
+
+Standardized user profile component (`UserProfileButton`) consuming `@academy/auth-core` mounted in the top-right header utility area across all applications.
+
+| Element / Zone | Specification & Design Token | Behavior & Theming |
+| :--- | :--- | :--- |
+| **Trigger Avatar** | Circular avatar (`w-9 h-9 rounded-full`), overflow hidden | Displays `currentUser.photoURL` or fallback uppercase initials badge (`bg-[#162544] text-sky-300`). |
+| **Super Admin Ring** | Border ring `ring-2 ring-amber-400`, indicator badge `#f59e0b` | Renders when `claims.role === 'super_admin'`. Glow: `box-shadow: 0 0 10px rgba(245, 158, 11, 0.45)`. |
+| **User Identity Zone** | Display Name (or "Academy Member"), Email, `<ProviderBadge />` | Shows sign-in provider brand SVG badge: Google, Apple, or Email. |
+| **Role & Context Zone** | Role badge (`SUPER ADMIN` amber-400 / `Member` sky-400), Context tag | Active application label (`Context: Library`). |
+| **Session Metadata Zone** | Truncated UID (`abc12...89xyz`) + 1-Click Copy UID, UTC Session Time | Click writes UID to `navigator.clipboard` with visual "Copied" feedback. |
+| **Action Footer** | Central Audit Ledger deep-link (Super Admin only), Sign Out button | Sign Out dispatches immutable `AUTH_SIGN_OUT` event to `/audit_logs` before session teardown. |
+| **Dismissal & Accessibility** | `useClickOutside` hook + Escape key listener | WAI-ARIA compliant (`aria-haspopup="menu"`, `aria-expanded`). Closes cleanly on outside click or Esc. |
