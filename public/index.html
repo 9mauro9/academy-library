@@ -9,50 +9,84 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script type="module" src="./library-auth.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
-      <div class="sidebar-header" style="gap: 12px; align-items: center; display: flex; margin-bottom: 32px; padding-left: 4px;">
-        <div class="logo-container" style="width: 32px; height: 32px; background: var(--grad-cyan-blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; box-shadow: 0 0 10px rgba(99, 102, 241, 0.3); flex-shrink: 0;">▲</div>
-        <div>
-          <h1 style="font-size: 0.95rem; font-weight: 700; margin: 0; line-height: 1.2; letter-spacing: -0.02em;">Academy Library</h1>
-          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">CMS Core Portal</p>
-        </div>
-      </div>
-      <nav class="nav-menu">
-        <button class="nav-btn active" data-tab="dashboard">
-          <span class="icon">📊</span> Dashboard
-        </button>
-        <button class="nav-btn" data-tab="ingestion">
-          <span class="icon">📥</span> Data Ingestion
-        </button>
-        <button class="nav-btn" data-tab="tracks">
-          <span class="icon">🌿</span> Tracks Browser
-        </button>
-        <button class="nav-btn" data-tab="assets">
-          <span class="icon">🎬</span> Asset Manager
-        </button>
-        <button class="nav-btn" data-tab="logs">
-          <span class="icon">🔔</span> Invalidation Logs
-        </button>
-        <button class="nav-btn" data-tab="history">
-          <span class="icon">📜</span> History & Undo
-        </button>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="status-indicator online"></div>
-        <div class="status-text">Connected: academy-library</div>
-        <div id="auth-user-info" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:none">
-          <div id="auth-user-name" style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px"></div>
-          <button id="signout-btn" onclick="firebase.auth().signOut()" style="width:100%;padding:6px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;cursor:pointer;font-size:0.72rem;font-weight:600;letter-spacing:0.02em">Sign Out</button>
-        </div>
-      </div>
-    </aside>
+  <div id="library-gate-root" style="display: flex; flex-direction: column; width: 100%; height: 100vh;"></div>
+  <div id="library-app-shell" style="display: none; flex-direction: column; width: 100vw; height: 100vh; overflow: hidden;">
 
-    <!-- Main Content Area -->
-    <main class="main-content">
+    <!-- Top App Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">▲</div>
+        <div class="brand-title">
+          <div style="display: flex; align-items: center; gap: 0.45rem;">
+            <h1>Academy Library</h1>
+            <button
+              type="button"
+              onclick="openDisclaimerModal()"
+              class="disclaimer-badge-btn"
+              title="View Legal Disclaimer & Terms of Use"
+            >
+              <span>Disclaimer</span>
+            </button>
+          </div>
+          <p>CMS Core Portal</p>
+        </div>
+      </div>
+      
+      <div class="controls-section">
+        <div class="control-group">
+          <span class="status-badge live" style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;"></span>
+            Firestore Live
+          </span>
+        </div>
+        <div class="control-group" id="profileBtnContainer" style="display: flex; align-items: center;"></div>
+        <div class="control-group">
+          <button class="btn-action" id="themeToggleBtn" onclick="toggleLibraryTheme()" style="width: 32px; height: 32px; justify-content: center; padding: 0; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); cursor: pointer; display: flex; align-items: center;" title="Toggle Light/Dark Theme">
+            🌙
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-container">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <div class="sidebar-header" style="gap: 12px; align-items: center; display: flex; margin-bottom: 24px; padding-left: 4px;">
+          <div class="sidebar-nav-title" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-muted);">
+            CMS Navigation
+          </div>
+        </div>
+        <nav class="nav-menu">
+          <button class="nav-btn active" data-tab="dashboard">
+            <span class="icon">📊</span> Dashboard
+          </button>
+          <button class="nav-btn" data-tab="ingestion">
+            <span class="icon">📥</span> Data Ingestion
+          </button>
+          <button class="nav-btn" data-tab="tracks">
+            <span class="icon">🌿</span> Tracks Browser
+          </button>
+          <button class="nav-btn" data-tab="assets">
+            <span class="icon">🎬</span> Asset Manager
+          </button>
+          <button class="nav-btn" data-tab="logs">
+            <span class="icon">🔔</span> Invalidation Logs
+          </button>
+          <button class="nav-btn" data-tab="history">
+            <span class="icon">📜</span> History & Undo
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="status-indicator online"></div>
+          <div class="status-text">Connected: academy-library</div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="main-content">
       <!-- DASHBOARD TAB -->
       <section id="dashboard" class="content-tab active">
         <div class="tab-header">
@@ -440,75 +474,104 @@
     </form>
   </dialog>
 
-  <!-- Google Auth Overlay — shown until signed in -->
-  <div id="auth-overlay" style="position:fixed;inset:0;z-index:9999;background:var(--bg-primary,#0f1117);display:flex;align-items:center;justify-content:center">
-    <div style="background:var(--panel-bg,#1a1d27);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:360px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
-      <div style="width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#06b6d4);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.3rem;margin-bottom:1.25rem">▲</div>
-      <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 0.4rem;color:#fff">Academy Library</h2>
-      <p style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin:0 0 1.5rem;line-height:1.5">Sign in to access the CMS portal</p>
-      <div id="auth-error" style="display:none;color:#f87171;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.78rem;margin-bottom:1rem;line-height:1.4"></div>
-      <button id="google-signin-btn" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 1rem;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(6,182,212,0.15));border:1px solid rgba(99,102,241,0.4);color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:600">
-        <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.215 17.64 11.907 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-        Sign in with Google
-      </button>
+  <!-- Legal Disclaimer Modal -->
+  <div class="modal-overlay" id="disclaimerModal" onclick="if(event.target===this) closeDisclaimerModal()">
+    <div class="modal-card" style="max-width: 640px; width: 90%;">
+      <div class="modal-header" style="background: rgba(245, 158, 11, 0.05); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; color: #f59e0b; font-size: 1.2rem;">
+            ⚠️
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">Legal Disclaimer &amp; Terms of Use</h3>
+            <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">Experimental Research &amp; Evaluation Notice</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeDisclaimerModal()" title="Close Disclaimer">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; font-size: 0.85rem; line-height: 1.55; color: var(--text-muted); max-height: 65vh; overflow-y: auto;">
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 0.75rem 1rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <div style="font-size: 0.8rem; color: var(--text-main);">
+            <strong>Notice:</strong> Please review the following terms and disclaimers before using this software application.
+          </div>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.25rem 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">1. Nature of Software</h4>
+          <p style="margin: 0;">This software constitutes an experimental, non-production build provided solely for internal testing, evaluation, and investigational use cases.</p>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.25rem 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">2. Assumption of Risk</h4>
+          <p style="margin: 0;">End-users assume full, sole, and unconditional responsibility and liability for any utilization, deployment, application, or misuse of the software and its outputs.</p>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.25rem 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">3. No Warranty &amp; Data Accuracy</h4>
+          <p style="margin: 0;">The application is provided strictly &lsquo;as-is&rsquo; and &lsquo;as-available&rsquo;, without warranties of any kind. It may contain defects, technical bugs, inaccuracies, and may produce erroneous calculations, data, or output.</p>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.25rem 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">4. Development &amp; Support Status</h4>
+          <p style="margin: 0;">The system is actively under development, highly volatile, and explicitly unsupported by any formal service level agreements (SLAs) or dedicated maintenance channels.</p>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.25rem 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">5. Independence &amp; Affiliation Disclaimer</h4>
+          <p style="margin: 0;">This project is an independent, third-party initiative and maintains no legal, commercial, operational, or content-related affiliation, endorsement, or linkage to Arista Networks, Inc. or any other original equipment manufacturer.</p>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.25rem 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">6. Information Classification</h4>
+          <p style="margin: 0;">The application contains strictly public, non-confidential, and non-sensitive information, and must not be used to process or store restricted, proprietary, or non-public data.</p>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button onclick="closeDisclaimerModal()" style="padding: 0.5rem 1.25rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; background: var(--text-accent); color: #fff; border: none; border-radius: 6px;">
+          I Understand &amp; Acknowledge
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
+  </div><!-- end #library-app-shell -->
+
+  <!-- Firebase SDK Compat -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-  <!-- Google Auth Init -->
+  <!-- App Global Helpers -->
   <script>
-    firebase.initializeApp({
-      apiKey: "AIzaSyBgAKn-9rWtVRd93WCZIIqSnmLNMOBic90",
-      authDomain: "academy-live-builder.firebaseapp.com",
-      projectId: "academy-live-builder",
-      storageBucket: "academy-live-builder.firebasestorage.app",
-      messagingSenderId: "353347356715",
-      appId: "1:353347356715:web:f1ce65d5be524b058c826e"
-    });
-
-    const _provider = new firebase.auth.GoogleAuthProvider();
-    _provider.setCustomParameters({ prompt: 'select_account' });
-
-    document.getElementById('google-signin-btn').addEventListener('click', function() {
-      const btn = this;
-      const errEl = document.getElementById('auth-error');
-      btn.disabled = true;
-      btn.textContent = 'Signing in…';
-      errEl.style.display = 'none';
-      firebase.auth().signInWithPopup(_provider).catch(function(err) {
-        errEl.textContent = err.code === 'auth/popup-closed-by-user'
-          ? 'Sign-in cancelled. Please try again.'
-          : (err.code === 'auth/popup-blocked'
-            ? 'Pop-up blocked. Please allow pop-ups for this site.'
-            : err.message);
-        errEl.style.display = 'block';
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.215 17.64 11.907 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google';
+    if (!firebase.apps.length) {
+      firebase.initializeApp({
+        apiKey: "AIzaSyBgAKn-9rWtVRd93WCZIIqSnmLNMOBic90",
+        authDomain: "academy-live-builder.firebaseapp.com",
+        projectId: "academy-live-builder",
+        storageBucket: "academy-live-builder.firebasestorage.app",
+        messagingSenderId: "353347356715",
+        appId: "1:353347356715:web:f1ce65d5be524b058c826e"
       });
-    });
+    }
 
-    firebase.auth().onAuthStateChanged(function(user) {
-      const overlay = document.getElementById('auth-overlay');
-      const userInfo = document.getElementById('auth-user-info');
-      const userName = document.getElementById('auth-user-name');
-      if (user) {
-        overlay.style.display = 'none';
-        userInfo.style.display = 'block';
-        userName.textContent = user.displayName || user.email || 'Signed in';
-      } else {
-        overlay.style.display = 'flex';
-        userInfo.style.display = 'none';
-        const btn = document.getElementById('google-signin-btn');
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.215 17.64 11.907 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google';
-        }
-      }
-    });
+    function openDisclaimerModal() {
+      const modal = document.getElementById('disclaimerModal');
+      if (modal) modal.classList.add('active');
+    }
+    function closeDisclaimerModal() {
+      const modal = document.getElementById('disclaimerModal');
+      if (modal) modal.classList.remove('active');
+    }
+    function toggleLibraryTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('academy_library_theme', next);
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = next === 'dark' ? '🌙' : '☀️';
+    }
+    const savedTheme = localStorage.getItem('academy_library_theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      window.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeToggleBtn');
+        if (btn) btn.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+      });
+    }
   </script>
   <script src="app.js"></script>
 </body>

@@ -8,9 +8,22 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
-      'react': path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react': path.resolve(import.meta.dirname, 'node_modules/react'),
+      'react-dom': path.resolve(import.meta.dirname, 'node_modules/react-dom'),
     },
+  },
+  build: {
+    lib: {
+      entry: path.resolve(import.meta.dirname, 'src/mountProfile.tsx'),
+      name: 'LibraryAuth',
+      fileName: () => 'library-auth.js',
+      formats: ['es'],
+    },
+    outDir: 'dist',
+    emptyOutDir: false,
+  },
+  define: {
+    'process.env.NODE_ENV': '"production"',
   },
 })
 
