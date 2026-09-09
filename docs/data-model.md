@@ -138,7 +138,7 @@ Tamper-resistant append-only security and operational audit ledger.
 | :--- | :--- | :--- |
 | `logId` | **String** (Document ID) | Unique audit log ID. |
 | `appId` | **String** | Originating application: `library`, `timeliner`, `builder`, `insight`, `toolkit`. |
-| `eventType` | **String** | Standardized event type (e.g. `AUTH_SIGN_IN`, `CANVAS_SAVE`, `EXPORT_REPORT`). |
+| `eventType` | **String** | Standardized event type (e.g. `AUTH_SIGN_IN`, `AUTH_SIGN_OUT`, `ROUTE_NAVIGATION`, `CAPABILITY_INVOCATION`). |
 | `userId` | **String** | Authenticated user UID or `anonymous`. |
 | `userEmail` | **String** (optional) | Authenticated user email. |
 | `userRole` | **String** | User role at time of event (`super_admin` or `user`). |
