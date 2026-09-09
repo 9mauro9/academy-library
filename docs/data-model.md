@@ -114,12 +114,42 @@ Curriculum tracks MUST be rendered in strict numerical sequence:
 - `user_notes` (`/user_notes/{noteId}`): Requires `request.auth.uid == resource.data.userId`.
 - `timelines` (`/timelines/{timelineId}`): Requires `request.auth.uid == resource.data.userId`.
 
-### Session & Storage State Lifecycle
-- **Storage Scope**: User sessions wipe transient keys (`academy_library_mock_user`, `academy_builder_mock_user`, `academy_builder_paths_*`) upon logout or session termination via `resetSessionState()`.
-- **Client Cache Isolation**: All transient components reset active learning paths and generated models upon auth session termination.
+### Centralized User Registry & Immutable Audit Ledger (OS 2.2)
 
+#### 1. Collection: `users` (`/users/{userId}`)
+Central identity profile and RBAC store.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `uid` | **String** (Document ID) | Firebase Authentication user UID. |
+| `email` | **String** | User primary email address. |
+| `displayName` | **String** | User display name or full name. |
+| `photoURL` | **String** (optional) | User avatar or profile image URL. |
+| `role` | **String** | Role assignment: `user` or `super_admin`. Self-escalation strictly blocked by Firestore rules. |
+| `createdAt` | **Timestamp** | Initial account provisioning timestamp. |
+| `lastLoginAt` | **Timestamp** | Most recent authentication timestamp. |
+
+- **Access Rule**: `isSuperAdmin() || isSelf(userId)` for read; `isSuperAdmin()` for arbitrary write; `isSelf(userId)` can create as `user` and update non-role fields.
+
+#### 2. Collection: `audit_logs` (`/audit_logs/{logId}`)
+Tamper-resistant append-only security and operational audit ledger.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `logId` | **String** (Document ID) | Unique audit log ID. |
+| `appId` | **String** | Originating application: `library`, `timeliner`, `builder`, `insight`, `toolkit`. |
+| `eventType` | **String** | Standardized event type (e.g. `AUTH_SIGN_IN`, `CANVAS_SAVE`, `EXPORT_REPORT`). |
+| `userId` | **String** | Authenticated user UID or `anonymous`. |
+| `userEmail` | **String** (optional) | Authenticated user email. |
+| `userRole` | **String** | User role at time of event (`super_admin` or `user`). |
+| `timestamp` | **FieldValue / Timestamp** | Firestore `serverTimestamp()` recording exact UTC entry time. |
+| `clientTelemetry` | **Map** | Client fingerprint: `userAgent`, `language`, `platform`, `screenResolution`, `timeZone`. |
+| `metadata` | **Map** (optional) | Contextual event details (entity IDs, query text, export format, etc.). |
+
+- **Access Rule**: `isSuperAdmin()` for read; `isAuthenticated()` for create; **update and delete strictly forbidden (`allow update, delete: if false;`)**.
 
 ---
+
 
 ## 8. Collection: `agent_messages` (`/agent_messages/{messageId}`)
 

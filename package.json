@@ -20,12 +20,13 @@
     "verify-versioning": "NODE_PATH=./node_modules node test/verify_versioning.cjs",
     "verify-taxonomy": "NODE_PATH=./node_modules node test/verify_taxonomy.cjs",
     "sync-docs": "NODE_PATH=./node_modules node scripts/sync-docs.cjs",
-    "test:rules": "jest test/firestore.rules.test.cjs --forceExit --detectOpenHandles",
+    "test:rules": "jest --testMatch '<rootDir>/test/firestore.rules.test.cjs' --forceExit --detectOpenHandles",
     "test": "npm run test:rules",
     "generate-architecture-diagrams": "node scripts/sync-docs.cjs",
     "test:i18n": "jest --testMatch \"<rootDir>/test/i18n.test.cjs\""
   },
   "dependencies": {
+    "@academy/auth-core": "file:../packages/auth-core",
     "clsx": "^2.1.1",
     "express": "^5.2.1",
     "firebase": "^12.15.0",

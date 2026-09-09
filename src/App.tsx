@@ -1,53 +1,29 @@
-import { useState, useEffect } from 'react';
-import { subscribeToAuth } from './services/firebaseService';
+import { AuthProvider, ProtectedRoute, useAuth, useAudit } from '@academy/auth-core';
 import { I18nProvider } from './i18n/I18nContext';
 import { Header } from './components/Header';
-import { Auth } from './components/Auth';
 import { DataManager } from './components/DataManager';
+import { useEffect } from 'react';
 
 function LibraryMain() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { currentUser, isSuperAdmin, role, signOut } = useAuth();
+  const { logNavigation } = useAudit({ appId: 'library' });
 
   useEffect(() => {
-    const unsubscribe = subscribeToAuth((user) => {
-      setCurrentUser(user);
-      setAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-  };
-
-  if (authLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        color: 'var(--text-secondary)',
-        fontSize: '0.9rem'
-      }}>
-        Loading Academy Library…
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return <Auth />;
-  }
+    logNavigation('library_catalog', { view: 'data_manager' });
+  }, [logNavigation]);
 
   return (
     <>
       <Header
         currentUser={currentUser}
-        onLogout={handleLogout}
+        isSuperAdmin={isSuperAdmin}
+        role={role}
+        onLogout={signOut}
       />
       <main style={{ flex: 1, overflow: 'auto' }}>
-        <DataManager />
+        <ProtectedRoute>
+          <DataManager />
+        </ProtectedRoute>
       </main>
     </>
   );
@@ -55,9 +31,11 @@ function LibraryMain() {
 
 export function App() {
   return (
-    <I18nProvider>
-      <LibraryMain />
-    </I18nProvider>
+    <AuthProvider appId="library">
+      <I18nProvider>
+        <LibraryMain />
+      </I18nProvider>
+    </AuthProvider>
   );
 }
 

@@ -33,10 +33,10 @@ graph TD
     end
 
     subgraph Firebase Shared Backend (academy-live-builder)
-        FS[(Firestore: assets, curriculum_map, courses, cms_history, document_chunks, metadata)]
+        FS[(Firestore: assets, curriculum_map, courses, cache_invalidations, cms_history, document_chunks, metadata, users, audit_logs, agent_messages, pcap_sessions)]
         ST[(Cloud Storage gs://academy-content-bucket)]
         CF[Cloud Functions - Indexer, Triggers & Debounce Engine]
-        AUTH[Firebase Auth - Google OAuth & Admin RBAC]
+        AUTH[Firebase Auth - Google / Apple OAuth, Email/Password & RBAC]
     end
 
     GS1 --> GS_API

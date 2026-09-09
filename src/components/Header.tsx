@@ -7,10 +7,12 @@ import { useI18n } from '../i18n/I18nContext';
 
 interface HeaderProps {
   currentUser?: any;
+  isSuperAdmin?: boolean;
+  role?: string;
   onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, isSuperAdmin, role, onLogout }) => {
   const { t } = useI18n();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [theme, setTheme] = React.useState(() => {
@@ -102,6 +104,40 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
                 <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentUser.email || (currentUser.isAnonymous ? t('nav.guest') : 'User')}
                 </span>
+                {isSuperAdmin ? (
+                  <span
+                    style={{
+                      background: 'rgba(217, 70, 239, 0.15)',
+                      color: '#d946ef',
+                      border: '1px solid rgba(217, 70, 239, 0.35)',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.03em',
+                      textTransform: 'uppercase',
+                    }}
+                    title={`Super Admin privileged access (Role: ${role || 'super_admin'})`}
+                  >
+                    Super Admin
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      background: 'rgba(68, 115, 169, 0.15)',
+                      color: '#7396bf',
+                      border: '1px solid rgba(68, 115, 169, 0.35)',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      fontSize: '0.65rem',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                    }}
+                    title={`Standard access (Role: ${role || 'user'})`}
+                  >
+                    User
+                  </span>
+                )}
                 <button
                   className="btn-action"
                   onClick={handleLogout}

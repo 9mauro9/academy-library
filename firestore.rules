@@ -3,19 +3,51 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // -----------------------------------------------------------------------
-    // Helper functions
+    // Helper functions (OS 2.2 Centralized Authentication & RBAC)
     // -----------------------------------------------------------------------
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        ('role' in request.auth.token && request.auth.token.role == 'super_admin') ||
+        ('admin' in request.auth.token && request.auth.token.admin == true) ||
+        ('email' in request.auth.token && request.auth.token.email == '9mauro9@gmail.com')
+      );
+    }
+
+    function isSelf(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // CMS admin — only the designated operator account may write
+    function isOwner(userId) {
+      return isSelf(userId);
+    }
+
+    // CMS admin — designated super_admin or operator email
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email == '9mauro9@gmail.com';
+      return isSuperAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // CENTRALIZED USER REGISTRY & IMMUTABLE AUDIT LEDGER (OS 2.2)
+    // -----------------------------------------------------------------------
+    match /users/{userId} {
+      allow read: if isSuperAdmin() || isSelf(userId);
+      allow write: if isSuperAdmin();
+      allow create: if isSelf(userId) && (!('role' in request.resource.data) || request.resource.data.role == 'user');
+      allow update: if isSelf(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+
+      match /{subcollection}/{docId} {
+        allow read, write: if isSuperAdmin() || isSelf(userId);
+      }
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated(); // Log entries can be appended by authenticated sessions
+      allow update, delete: if false;     // Strictly immutable
     }
 
     // -----------------------------------------------------------------------
@@ -70,26 +102,30 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------------
-    // MULTI-TENANT USER DATA — strict UID isolation
+    // USER DATA COLLECTIONS
     // -----------------------------------------------------------------------
-    match /users/{userId} {
-      allow read, write: if isOwner(userId);
-
-      match /{subcollection}/{docId} {
-        allow read, write: if isOwner(userId);
-      }
-    }
-
     match /user_notes/{noteId} {
-      allow read, write: if isAuthenticated() &&
-        (resource == null || resource.data.userId == request.auth.uid) &&
-        (request.resource == null || request.resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && (isSuperAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
     }
 
     match /timelines/{timelineId} {
-      allow read, write: if isAuthenticated() &&
-        (resource == null || resource.data.userId == request.auth.uid) &&
-        (request.resource == null || request.resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && (isSuperAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    match /agent_messages/{messageId} {
+      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && (isSuperAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    match /pcap_sessions/{sessionId} {
+      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && (isSuperAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (isSuperAdmin() || resource.data.userId == request.auth.uid);
     }
 
     // -----------------------------------------------------------------------
