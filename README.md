@@ -108,6 +108,8 @@ All applications across the Academy suite include an accessible, standardized **
 - **Development & Support Status**: The system is actively under development, highly volatile, and explicitly unsupported by any formal service level agreements (SLAs) or dedicated maintenance channels.
 - **Independence & Affiliation Disclaimer**: This project is an independent, third-party initiative and maintains no legal, commercial, operational, or content-related affiliation, endorsement, or linkage to Arista Networks, Inc. or any other original equipment manufacturer.
 - **Information Classification**: The application contains strictly public, non-confidential, and non-sensitive information, and must not be used to process or store restricted, proprietary, or non-public data.
+- **Restricted-Use Authentication Disclaimer**: The zero-trust login screen enforces compliance with corporate acceptable use policies:
+  > *"Authorized use only. Unauthorized access, use, or modification of this system is strictly prohibited and subject to monitoring, administrative action, and criminal prosecution. By signing in, you acknowledge compliance with corporate acceptable use policies."*
 
 
 

@@ -1,4 +1,4 @@
-import { AuthProvider, ProtectedRoute, useAuth, useAudit } from '@academy/auth-core';
+import { AuthProvider, AuthGate, useAuth, useAudit } from '@academy/auth-core';
 import { I18nProvider } from './i18n/I18nContext';
 import { Header } from './components/Header';
 import { DataManager } from './components/DataManager';
@@ -21,9 +21,7 @@ function LibraryMain() {
         onLogout={signOut}
       />
       <main style={{ flex: 1, overflow: 'auto' }}>
-        <ProtectedRoute>
-          <DataManager />
-        </ProtectedRoute>
+        <DataManager />
       </main>
     </>
   );
@@ -33,7 +31,9 @@ export function App() {
   return (
     <AuthProvider appId="library">
       <I18nProvider>
-        <LibraryMain />
+        <AuthGate appId="library" appName="Academy Library">
+          <LibraryMain />
+        </AuthGate>
       </I18nProvider>
     </AuthProvider>
   );
