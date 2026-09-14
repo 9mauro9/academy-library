@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ShieldAlert, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 
 interface LegalDisclaimerModalProps {
@@ -11,36 +11,35 @@ export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOp
   const { t } = useI18n();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
     if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     }
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleAcknowledge = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('disclaimer_acknowledged', 'true');
+    }
+    onClose();
+  };
 
   return (
     <div 
       className="disclaimer-overlay" 
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="disclaimer-title"
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 9999,
-        background: 'rgba(5, 9, 20, 0.75)',
-        backdropFilter: 'blur(6px)',
+        zIndex: 99999,
+        background: 'rgba(5, 9, 20, 0.85)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -96,24 +95,6 @@ export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOp
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              padding: '0.25rem',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'color 0.15s, background 0.15s'
-            }}
-            title="Close Disclaimer"
-          >
-            <X size={18} />
-          </button>
         </div>
 
         {/* Modal Content */}
@@ -207,7 +188,7 @@ export const LegalDisclaimerModal: React.FC<LegalDisclaimerModalProps> = ({ isOp
           gap: '0.75rem'
         }}>
           <button 
-            onClick={onClose}
+            onClick={handleAcknowledge}
             className="btn-action btn-primary"
             style={{
               padding: '0.5rem 1.25rem',

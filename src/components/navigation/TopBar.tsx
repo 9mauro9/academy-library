@@ -13,7 +13,10 @@ export interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({ onSignOutComplete, className = '' }) => {
   const { t } = useI18n();
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('disclaimer_acknowledged') !== 'true';
+  });
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('academy_library_theme') || 'dark';
   });

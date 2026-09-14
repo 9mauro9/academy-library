@@ -15,7 +15,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const { t } = useI18n();
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('disclaimer_acknowledged') !== 'true';
+  });
   const [theme, setTheme] = React.useState(() => {
     const saved = localStorage.getItem('academy_library_theme') || localStorage.getItem('academy_builder_theme');
     return saved || 'dark';
