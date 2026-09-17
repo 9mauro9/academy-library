@@ -16,15 +16,28 @@ Academy Library serves as the central administration portal for managing curricu
 
 ---
 
-## Data Ingestion & Automated Google Sheets Sync
-Data is pulled directly via Google Sheets API v4 (or client-side CSV export) from two master sources:
+## Two-Stage Curriculum Synchronization Pipeline
 
-1. **Academy Master Assets**: [https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing)
-2. **Academy Master Learning Paths**: [https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing)
+Academy Library maintains a strict two-stage ETL architecture separating unstructured human reference data from production Firestore collections:
 
-### Ingestion Triggers:
-- **Web UI**: Click **⚡ Sync Database** on the **Data Ingestion** or **Dashboard** pages.
-- **CLI**: `npm run sync-sheets`
+### Stage 1: Master Sheet Synchronization Engine (Pre-Sync Sheet ETL)
+- **Source**: `Academy Tracking` (Google Drive human-maintained reference sheets with track tabs like `DC Track`, `Campus Track`, `AI Track`).
+- **Target Masters (Google Drive)**:
+  1. **Academy Master Assets**: [Google Sheet](https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing) (`asset_name` primary key, ISO 8601 duration `PT##H##M##S`, version tags, metadata).
+  2. **Academy Master Learning Paths**: [Google Sheet](https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing) (`asset_name` foreign key, 5-tier curriculum hierarchy).
+- **Core Capabilities**:
+  - Resilient duration normalization: `HH:MM:SS`, `MM:SS`, text minutes $\to$ strict ISO 8601 duration format.
+  - Merged cell carry-forward state machine across multi-row curriculum hierarchy blocks.
+  - Two-way reconciliation diff engine classifying additions (`ADD`), modifications (`UPDATE`), unchanged (`NO_CHANGE`), and deprecated (`DEPRECATED`) records.
+  - Google Drive pre-write safety snapshot routine: clones timestamped backups prior to committing changes.
+  - AES Version 3 administrative UI (`MasterSheetSyncModule.tsx`) with pill navigation, active state color inversions, and interactive comparison tables.
+
+### Stage 2: Master Ingestion & Firestore Synchronization
+- Pulls audited master sheets via Google Sheets API v4 (with client-side CSV export fallback) into `assets` and `curriculum_map` Firestore collections.
+- **Ingestion Triggers**:
+  - **Web UI**: Click **Stage 2: Ingest Masters into Firestore** on the Pre-Sync module or **⚡ Sync Database** on the Data Ingestion page.
+  - **CLI**: `npm run sync-sheets`
+  - **Pre-Sync Verification**: `npm run verify-sync`
 
 ---
 

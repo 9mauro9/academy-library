@@ -15,14 +15,20 @@ This document outlines the visual system architecture, processing flows, caching
 
 ```mermaid
 graph TD
-    subgraph Data Sources
-        GS1[Google Sheets: Master Assets]
-        GS2[Google Sheets: Master Learning Paths]
+    subgraph "Stage 1: Reference Source & Pre-Sync ETL"
+        TRACK["Source: Academy Tracking (Google Drive)"]
+        PRE_SYNC["Master Sheet Synchronization Engine (Pre-Sync Engine)"]
+        DRIVE_BACKUP[("Google Drive Pre-Write Snapshots")]
     end
 
-    subgraph Ingestion & ETL Engine
-        SYNC[Automated Sync Engine: sync_sheets.cjs / API]
-        GS_API[Google Sheets API v4: sheets.googleapis.com]
+    subgraph "Intermediate Master Sheets (Google Drive)"
+        GS1["Academy Master Assets (PK: asset_name)"]
+        GS2["Academy Master Learning Paths (FK: asset_name)"]
+    end
+
+    subgraph "Stage 2: Master Ingestion & Firestore Sync"
+        SYNC["Master Ingestion Pipeline: sync_sheets.cjs / POST /api/sync-sheets"]
+        GS_API["Google Sheets API v4: sheets.googleapis.com"]
     end
 
     subgraph Client Applications
@@ -39,15 +45,20 @@ graph TD
         AUTH[Firebase Auth - Google / Apple OAuth, Email/Password & RBAC]
     end
 
+    TRACK --> PRE_SYNC
+    PRE_SYNC -->|1. Pre-Write Safety Snapshot| DRIVE_BACKUP
+    PRE_SYNC -->|2. Audit & Write Master Assets| GS1
+    PRE_SYNC -->|3. Audit & Write Master Paths| GS2
+
     GS1 --> GS_API
     GS2 --> GS_API
     GS_API --> SYNC
-    SYNC -->|1. Pre-Sync Checkpoint| FS
-    SYNC -->|2. Bulk Upsert Metadata| FS
-    SYNC -->|3. Log Invalidation Event| FS
+    SYNC -->|1. History Checkpoint| FS
+    SYNC -->|2. Bulk Upsert Assets & Maps| FS
+    SYNC -->|3. Log Cache Invalidation| FS
 
     AUTH -->|Authorize Admin Operations| LIB
-    LIB -->|Trigger Automated Sync| SYNC
+    LIB -->|Trigger Stage 1 Pre-Sync & Stage 2 Ingest| SYNC
     LIB -->|Direct Firestore CRUD| FS
     CF -->|Extract Metadata & Embeddings| FS
     CF -->|Dispatch Event Rebuilds| FS
@@ -56,6 +67,14 @@ graph TD
     BL -->|Link Course Assets & Maps| FS
     IN -->|Vector Search & Document Lookup| FS
 ```
+
+### 1.1 Master Sheet Synchronization Engine (Stage 1 Pre-Sync ETL)
+The Pre-Sync Engine establishes an architectural firewall between unstructured, human-maintained curriculum sheets and downstream database collections:
+1. **Hierarchical Extraction**: Parses track-specific tabs (`DC Track`, `Campus Track`, `AI Track`) resolving merged cells, hierarchical sequencing (`Track` $\to$ `Sub-Track` $\to$ `Lesson` $\to$ `Topic` $\to$ `Sub-Topic` $\to$ `asset_name`), and metadata.
+2. **ISO 8601 Duration Normalization**: Transforms irregular human durations (`00:14:45`, `15 mins`, `1.5 hrs`) into standard `PT##H##M##S`.
+3. **Two-Way Reconciliation Diff**: Evaluates additions (`ADD`), modifications (`UPDATE`), unchanged records (`NO_CHANGE`), and deprecated items (`DEPRECATED`) with field-level telemetry.
+4. **Google Drive Pre-Write Snapshot Routine**: Automatically clones timestamped backups of `Academy Master Assets` and `Academy Master Learning Paths` to Google Drive before applying any batch modifications.
+5. **Stage 2 Handoff**: Upon completion, seamlessly passes audited master sheet data to the Firestore ingestion pipeline.
 
 ---
 

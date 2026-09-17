@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchTopics, saveTopicsList, triggerEmbeddingGeneration } from '../services/firebaseService';
-import { Database, FileSpreadsheet, UploadCloud, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Database, FileSpreadsheet, UploadCloud, RefreshCw, CheckCircle, AlertTriangle, GitCompare } from 'lucide-react';
+import { MasterSheetSyncModule } from './admin/MasterSheetSyncModule';
 
 export const DataManager: React.FC = () => {
   const [sheetUrl, setSheetUrl] = useState('');
@@ -9,6 +10,7 @@ export const DataManager: React.FC = () => {
   const [existingTopics, setExistingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [activeEngineMode, setActiveEngineMode] = useState<'presync' | 'direct'>('presync');
 
   useEffect(() => {
     fetchExistingTopics();
@@ -191,12 +193,36 @@ export const DataManager: React.FC = () => {
 
   return (
     <div className="data-manager-layout">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-        <Database className="text-secondary" />
-        <h2>Data Catalog & Ingestion</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Database className="text-secondary" />
+          <h2 style={{ margin: 0 }}>Data Catalog & Synchronization Hub</h2>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <button
+            onClick={() => setActiveEngineMode('presync')}
+            className={`btn-action ${activeEngineMode === 'presync' ? 'btn-primary' : ''}`}
+            style={{ fontSize: '0.75rem', padding: '0.4rem 0.85rem' }}
+          >
+            <GitCompare size={14} />
+            <span>Master Sheet Pre-Sync (Stage 1)</span>
+          </button>
+          <button
+            onClick={() => setActiveEngineMode('direct')}
+            className={`btn-action ${activeEngineMode === 'direct' ? 'btn-primary' : ''}`}
+            style={{ fontSize: '0.75rem', padding: '0.4rem 0.85rem' }}
+          >
+            <Database size={14} />
+            <span>Direct Catalog / Ingestion (Stage 2)</span>
+          </button>
+        </div>
       </div>
 
-      {message.text && (
+      {activeEngineMode === 'presync' ? (
+        <MasterSheetSyncModule />
+      ) : (
+        <>
+          {message.text && (
         <div style={{
           padding: '1rem',
           borderRadius: '8px',
@@ -375,6 +401,8 @@ export const DataManager: React.FC = () => {
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
