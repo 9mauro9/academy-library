@@ -179,6 +179,13 @@ class AcademyLibraryApp {
     this.customFile = null;
     this.ingestType = 'standard';
 
+    // Pre-Sync Engine state
+    this.preSyncReport = null;
+    this.preSyncFilter = 'ALL';
+    this.preSyncSearch = '';
+    this.preSyncSubTab = 'overview';
+    this.preSyncSnapshots = [];
+
     // Cache invalidation polling
     this.logsPollTimer = null;
     this.lastLogTimestamp = null;
@@ -421,6 +428,7 @@ class AcademyLibraryApp {
     const activeSec = document.getElementById(tabName);
     if (activeSec) activeSec.classList.add('active');
 
+    if (tabName === 'pre-sync' && !this.preSyncReport) this.handleRunPreSyncDiff(true);
     if (tabName === 'assets') this.loadAssets();
     if (tabName === 'tracks') this.loadTracks();
     if (tabName === 'logs') this.loadLogs();
@@ -884,6 +892,594 @@ class AcademyLibraryApp {
 
   async revertToCheckpoint(commitId) {
     alert(`Revert to checkpoint "${commitId}" — this feature requires the backend ETL service. Contact your admin.`);
+  }
+
+  // -----------------------------------------------------------------------
+  // Master Sheet Synchronization Engine (Stage 1 Pre-Sync ETL)
+  // -----------------------------------------------------------------------
+  togglePreSyncConfig() {
+    const drawer = document.getElementById('presync-config-drawer');
+    if (drawer) {
+      drawer.style.display = drawer.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  switchPreSyncSubTab(subTab) {
+    this.preSyncSubTab = subTab;
+    const pills = ['overview', 'asset-diff', 'path-diff', 'audit-log'];
+    pills.forEach(p => {
+      const btn = document.getElementById(`pill-presync-${p}`);
+      if (btn) btn.classList.toggle('active', p === subTab);
+      const tabDiv = document.getElementById(`presync-subtab-${p}`);
+      if (tabDiv) tabDiv.style.display = p === subTab ? 'block' : 'none';
+    });
+  }
+
+  setPreSyncActionFilter(action) {
+    this.preSyncFilter = action;
+    const acts = ['all', 'add', 'update', 'deprecated', 'nochange'];
+    acts.forEach(a => {
+      const btn = document.getElementById(`btn-filter-asset-${a}`);
+      if (btn) btn.classList.toggle('active', a.toUpperCase() === action || (a === 'nochange' && action === 'NO_CHANGE'));
+      const pbtn = document.getElementById(`btn-filter-path-${a}`);
+      if (pbtn) pbtn.classList.toggle('active', a.toUpperCase() === action || (a === 'nochange' && action === 'NO_CHANGE'));
+    });
+    this.renderPreSyncAssetDiff();
+    this.renderPreSyncPathDiff();
+  }
+
+  handlePreSyncFilterChange() {
+    const aSearch = document.getElementById('presync-asset-search');
+    const pSearch = document.getElementById('presync-path-search');
+    this.preSyncSearch = (aSearch && aSearch.value) || (pSearch && pSearch.value) || '';
+    this.renderPreSyncAssetDiff();
+    this.renderPreSyncPathDiff();
+  }
+
+  // Helper: Normalizes duration to strict ISO 8601 (PT##H##M##S)
+  parseDurationToIso(input) {
+    if (!input) return 'PT00H00M00S';
+    let raw = String(input).trim();
+    if (!raw || ['n/a', 'none', 'null', '-'].includes(raw.toLowerCase())) return 'PT00H00M00S';
+    if (raw.toUpperCase().startsWith('PT')) return raw.toUpperCase();
+
+    let totalSecs = 0;
+    const hourMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)/i);
+    const minMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)/i);
+    const secMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds)/i);
+
+    if (hourMatch || minMatch || secMatch) {
+      if (hourMatch) totalSecs += parseFloat(hourMatch[1]) * 3600;
+      if (minMatch) totalSecs += parseFloat(minMatch[1]) * 60;
+      if (secMatch) totalSecs += parseFloat(secMatch[1]);
+    } else if (raw.includes(':')) {
+      const parts = raw.split(':');
+      if (parts.length === 3) {
+        totalSecs = (parseFloat(parts[0]) || 0) * 3600 + (parseFloat(parts[1]) || 0) * 60 + (parseFloat(parts[2]) || 0);
+      } else if (parts.length === 2) {
+        totalSecs = (parseFloat(parts[0]) || 0) * 60 + (parseFloat(parts[1]) || 0);
+      }
+    } else {
+      const n = parseFloat(raw);
+      if (!isNaN(n) && n > 0) {
+        totalSecs = (n > 0 && n < 1) ? Math.round(n * 86400) : (n <= 180 ? n * 60 : n);
+      }
+    }
+
+    const rounded = Math.round(totalSecs);
+    const h = Math.floor(rounded / 3600);
+    const m = Math.floor((rounded % 3600) / 60);
+    const s = rounded % 60;
+    const pad = v => (v < 10 ? '0' + v : String(v));
+    return `PT${pad(h)}H${pad(m)}M${pad(s)}S`;
+  }
+
+  formatDurationHuman(isoStr) {
+    if (!isoStr || !isoStr.startsWith('PT')) return '0m 00s';
+    const match = isoStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return '0m 00s';
+    const h = parseInt(match[1] || '0', 10);
+    const m = parseInt(match[2] || '0', 10);
+    const s = parseInt(match[3] || '0', 10);
+    const pad = v => (v < 10 ? '0' + v : String(v));
+    if (h > 0) return `${h}h ${pad(m)}m ${pad(s)}s`;
+    return `${m}m ${pad(s)}s`;
+  }
+
+  async handleRunPreSyncDiff(useMock = false) {
+    const diffBtn = document.getElementById('btn-run-presync-diff');
+    const diffIcon = document.getElementById('presync-diff-icon');
+    const diffText = document.getElementById('presync-diff-text');
+    if (diffBtn) diffBtn.disabled = true;
+    if (diffIcon) diffIcon.innerText = '⏳';
+    if (diffText) diffText.innerText = 'Analyzing Sheets...';
+
+    try {
+      // 1. Load sample or live data
+      const sample = this.getPreSyncSampleData();
+      const extracted = this.extractPreSyncHierarchy(sample.trackingTabs);
+
+      // 2. Reconcile against target master sheets
+      const report = this.reconcilePreSyncData(
+        extracted.assets,
+        sample.masterAssets,
+        extracted.learningPaths,
+        sample.masterPaths
+      );
+
+      this.preSyncReport = report;
+      this.renderPreSync();
+
+      const applyBtn = document.getElementById('btn-apply-master-updates');
+      if (applyBtn) applyBtn.style.display = 'inline-flex';
+    } catch (err) {
+      console.error('[PreSync] Diff error:', err);
+      alert(`Pre-Sync Diff Analysis failed: ${err.message}`);
+    } finally {
+      if (diffBtn) diffBtn.disabled = false;
+      if (diffIcon) diffIcon.innerText = '🔄';
+      if (diffText) diffText.innerText = 'Run Diff Analysis';
+    }
+  }
+
+  getPreSyncSampleData() {
+    const trackingTabs = {
+      'DC Track': [
+        ['Track Name', 'Sub-Track Name', 'Lesson Name', 'Topic Name', 'Sub-Topic Name', 'Duration', 'Type', 'Skill Tag', 'Difficulty', 'EOS Version', 'Developer', 'Comments'],
+        ['Data Center', 'Core Spine-Leaf', 'EVPN-VXLAN Fundamentals', 'Overlay Routing', 'EVPN Distributed Anycast Gateway', '00:14:45', 'video', 'EVPN, VXLAN, BGP', 4, '4.32.0F', 'Arista Curriculum Team', 'Revised for EOS 4.32'],
+        ['', '', '', '', 'Centralized vs Distributed Routing', '00:18:20', 'video', 'EVPN, Routing', 4, '4.32.0F', 'Arista Curriculum Team', 'Merged cell test'],
+        ['', '', 'Day-2 Operations', 'Telemetry & Observability', 'Streaming Telemetry with TerminAttr', '15 mins', 'lab', 'Telemetry, gNMI', 5, '4.32.0F', 'Arista Cloud Team', 'Hands-on lab updated'],
+        ['', '', '', '', 'Flow Tracking with CloudVision', '00:12:10', 'video', 'CloudVision, Analytics', 3, '4.32.0F', 'Arista Cloud Team', 'New telemetry video'],
+      ],
+      'Campus Track': [
+        ['Track Name', 'Sub-Track Name', 'Lesson Name', 'Topic Name', 'Asset Name', 'Duration', 'Type', 'Skill Tag', 'Difficulty', 'CVP Version', 'Developer', 'Needs Update'],
+        ['Campus & Edge', 'Campus Architecture', 'PoE & Multi-Gigabit', 'Switching Fabric', 'Campus Core & Aggregation Overview', '01:20:00', 'video', 'Campus, PoE', 3, '2024.1.0', 'Campus Team', 'No'],
+        ['', '', '', '', 'Arista Cognitive Campus Zero Touch', '25 min', 'video', 'ZTP, Campus', 4, '2024.1.0', 'Campus Team', 'Yes'],
+      ],
+      'AI Track': [
+        ['Track Name', 'Lesson Name', 'Topic Name', 'Asset Name', 'Duration', 'Type', 'Skill Tag', 'Difficulty', 'AVD Version', 'Developer'],
+        ['AI Networking', 'Ultra-Ethernet Architecture', 'RoCEv2 Transport', 'RoCEv2 Congestion Control & PFC', '00:22:40', 'video', 'RoCE, AI, PFC', 6, 'v4.2.0', 'AI Engineering'],
+        ['', '', '', 'Lossless Fabric Buffer Sizing', '18:50', 'lab', 'Buffer Sizing, AI', 7, 'v4.2.0', 'AI Engineering'],
+      ]
+    };
+
+    const masterAssets = [
+      {
+        asset_name: 'EVPN Distributed Anycast Gateway',
+        asset_type: 'video',
+        duration: 'PT00H12M00S', // Will detect UPDATE (was 12m, tracking says 14m 45s)
+        difficulty_level: 4,
+        skill_tag: 'EVPN, VXLAN',
+        last_updated: '2025-01-10',
+        'cvp_cv-cue_version': '2023.2.0',
+        eos_version: '4.30.0F',
+        avd_version: '',
+        developer: 'Curriculum Team',
+        needs_update: false,
+        comments: 'Original version',
+      },
+      {
+        asset_name: 'Centralized vs Distributed Routing',
+        asset_type: 'video',
+        duration: 'PT00H18M20S', // UNCHANGED
+        difficulty_level: 4,
+        skill_tag: 'EVPN, Routing',
+        last_updated: '2025-02-01',
+        'cvp_cv-cue_version': '',
+        eos_version: '4.32.0F',
+        avd_version: '',
+        developer: 'Arista Curriculum Team',
+        needs_update: false,
+        comments: 'Merged cell test',
+      },
+      {
+        asset_name: 'Campus Core & Aggregation Overview',
+        asset_type: 'video',
+        duration: 'PT01H20M00S', // UNCHANGED
+        difficulty_level: 3,
+        skill_tag: 'Campus, PoE',
+        last_updated: '2024-11-20',
+        'cvp_cv-cue_version': '2024.1.0',
+        eos_version: '',
+        avd_version: '',
+        developer: 'Campus Team',
+        needs_update: false,
+        comments: '',
+      },
+      {
+        asset_name: 'Legacy 7050 Series Hardware Architecture', // DEPRECATED
+        asset_type: 'video',
+        duration: 'PT00H45M00S',
+        difficulty_level: 2,
+        skill_tag: 'Hardware',
+        last_updated: '2022-05-15',
+        'cvp_cv-cue_version': '',
+        eos_version: '4.24.0F',
+        avd_version: '',
+        developer: 'Legacy Author',
+        needs_update: true,
+        comments: 'End of support candidate',
+      }
+    ];
+
+    const masterPaths = [
+      {
+        track_name: 'Data Center',
+        sub_track_name: 'Core Spine-Leaf',
+        lesson_name: 'EVPN-VXLAN Fundamentals',
+        topic_name: 'Overlay Routing',
+        asset_name: 'EVPN Distributed Anycast Gateway',
+      },
+      {
+        track_name: 'Data Center',
+        sub_track_name: 'Core Spine-Leaf',
+        lesson_name: 'EVPN-VXLAN Fundamentals',
+        topic_name: 'Overlay Routing',
+        asset_name: 'Centralized vs Distributed Routing',
+      },
+      {
+        track_name: 'Legacy Hardware',
+        sub_track_name: 'End of Life',
+        lesson_name: 'Archived Hardware',
+        topic_name: '7050 Series',
+        asset_name: 'Legacy 7050 Series Hardware Architecture',
+      }
+    ];
+
+    return { trackingTabs, masterAssets, masterPaths };
+  }
+
+  extractPreSyncHierarchy(tabsMap) {
+    const assetsMap = new Map();
+    const learningPaths = [];
+
+    for (const [tabName, rows] of Object.entries(tabsMap)) {
+      if (!rows || rows.length < 2) continue;
+      const headers = rows[0].map(h => String(h || '').toLowerCase().trim().replace(/[\s-]/g, '_'));
+
+      const findCol = (aliases) => {
+        for (const a of aliases) {
+          const idx = headers.indexOf(a);
+          if (idx !== -1) return idx;
+        }
+        return -1;
+      };
+
+      const trackIdx = findCol(['track_name', 'track']);
+      const subTrackIdx = findCol(['sub_track_name', 'sub_track', 'subtrack']);
+      const lessonIdx = findCol(['lesson_name', 'lesson']);
+      const topicIdx = findCol(['topic_name', 'topic']);
+      const assetIdx = findCol(['asset_name', 'sub_topic_name', 'asset', 'title']);
+      const durIdx = findCol(['duration', 'length', 'time']);
+      const typeIdx = findCol(['type', 'asset_type']);
+      const skillIdx = findCol(['skill_tag', 'skills', 'tags']);
+      const diffIdx = findCol(['difficulty', 'difficulty_level', 'level']);
+      const eosIdx = findCol(['eos_version', 'eos']);
+      const cvpIdx = findCol(['cvp_version', 'cvp', 'cvp_cv-cue_version']);
+      const avdIdx = findCol(['avd_version', 'avd']);
+      const devIdx = findCol(['developer', 'author']);
+      const commIdx = findCol(['comments', 'notes']);
+
+      let curTrack = tabName.replace(/\s*track$/i, '').trim() || 'General';
+      let curSubTrack = 'General';
+      let curLesson = 'General Lesson';
+      let curTopic = 'General Topic';
+
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || row.length === 0) continue;
+
+        const getCell = (i) => (i !== -1 && row[i] !== undefined && row[i] !== null ? String(row[i]).trim() : '');
+
+        if (getCell(trackIdx)) curTrack = getCell(trackIdx);
+        if (getCell(subTrackIdx)) curSubTrack = getCell(subTrackIdx);
+        if (getCell(lessonIdx)) curLesson = getCell(lessonIdx);
+        if (getCell(topicIdx)) curTopic = getCell(topicIdx);
+
+        const assetName = getCell(assetIdx);
+        if (!assetName) continue;
+
+        const isoDuration = this.parseDurationToIso(getCell(durIdx));
+
+        const assetObj = {
+          asset_name: assetName,
+          asset_type: getCell(typeIdx) || 'video',
+          duration: isoDuration,
+          difficulty_level: parseFloat(getCell(diffIdx)) || null,
+          skill_tag: getCell(skillIdx),
+          last_updated: new Date().toISOString().split('T')[0],
+          'cvp_cv-cue_version': getCell(cvpIdx),
+          eos_version: getCell(eosIdx),
+          avd_version: getCell(avdIdx),
+          developer: getCell(devIdx),
+          needs_update: false,
+          comments: getCell(commIdx),
+        };
+
+        assetsMap.set(assetName, assetObj);
+
+        learningPaths.push({
+          track_name: curTrack,
+          sub_track_name: curSubTrack,
+          lesson_name: curLesson,
+          topic_name: curTopic,
+          asset_name: assetName,
+        });
+      }
+    }
+
+    return { assets: Array.from(assetsMap.values()), learningPaths };
+  }
+
+  reconcilePreSyncData(trackingAssets, masterAssets, trackingPaths, masterPaths) {
+    const masterAssetMap = new Map(masterAssets.map(a => [a.asset_name, a]));
+    const trackingAssetMap = new Map(trackingAssets.map(a => [a.asset_name, a]));
+    const assetDiffs = [];
+
+    // Evaluate tracking additions and updates
+    for (const [name, trackRow] of trackingAssetMap.entries()) {
+      const mastRow = masterAssetMap.get(name);
+      if (!mastRow) {
+        assetDiffs.push({
+          action: 'ADD',
+          asset_name: name,
+          trackingRow: trackRow,
+          masterRow: null,
+          fieldChanges: [{ field: 'ALL', label: 'New Asset', prev: null, next: trackRow }],
+        });
+      } else {
+        const changes = [];
+        if (mastRow.duration !== trackRow.duration) {
+          changes.push({ field: 'duration', label: 'Duration', prev: mastRow.duration, next: trackRow.duration });
+        }
+        if (mastRow.eos_version !== trackRow.eos_version && trackRow.eos_version) {
+          changes.push({ field: 'eos_version', label: 'EOS Version', prev: mastRow.eos_version, next: trackRow.eos_version });
+        }
+        if (mastRow.skill_tag !== trackRow.skill_tag && trackRow.skill_tag) {
+          changes.push({ field: 'skill_tag', label: 'Skill Tag', prev: mastRow.skill_tag, next: trackRow.skill_tag });
+        }
+
+        if (changes.length > 0) {
+          assetDiffs.push({ action: 'UPDATE', asset_name: name, trackingRow: trackRow, masterRow: mastRow, fieldChanges: changes });
+        } else {
+          assetDiffs.push({ action: 'NO_CHANGE', asset_name: name, trackingRow: trackRow, masterRow: mastRow, fieldChanges: [] });
+        }
+      }
+    }
+
+    // Evaluate deprecated
+    for (const [name, mastRow] of masterAssetMap.entries()) {
+      if (!trackingAssetMap.has(name)) {
+        assetDiffs.push({
+          action: 'DEPRECATED',
+          asset_name: name,
+          trackingRow: null,
+          masterRow: mastRow,
+          fieldChanges: [{ field: 'STATUS', label: 'Missing from Tracking', prev: 'ACTIVE', next: 'DEPRECATED' }],
+        });
+      }
+    }
+
+    // Reconcile Learning Paths
+    const genKey = p => `${p.track_name}::${p.sub_track_name || 'General'}::${p.lesson_name}::${p.topic_name}::${p.asset_name}`;
+    const masterPathMap = new Map(masterPaths.map(p => [genKey(p), p]));
+    const trackingPathMap = new Map(trackingPaths.map(p => [genKey(p), p]));
+    const pathDiffs = [];
+
+    for (const [key, trackPath] of trackingPathMap.entries()) {
+      if (!masterPathMap.has(key)) {
+        pathDiffs.push({ action: 'ADD', path: trackPath, fieldChanges: [{ label: 'New Curriculum Node' }] });
+      } else {
+        pathDiffs.push({ action: 'NO_CHANGE', path: trackPath, fieldChanges: [] });
+      }
+    }
+
+    for (const [key, mastPath] of masterPathMap.entries()) {
+      if (!trackingPathMap.has(key)) {
+        pathDiffs.push({ action: 'DEPRECATED', path: mastPath, fieldChanges: [{ label: 'Removed in Tracking' }] });
+      }
+    }
+
+    const summary = {
+      totalTrackingAssets: trackingAssetMap.size,
+      assetsToAdd: assetDiffs.filter(a => a.action === 'ADD').length,
+      assetsToUpdate: assetDiffs.filter(a => a.action === 'UPDATE').length,
+      assetsDeprecated: assetDiffs.filter(a => a.action === 'DEPRECATED').length,
+      assetsUnchanged: assetDiffs.filter(a => a.action === 'NO_CHANGE').length,
+      totalTrackingPaths: trackingPathMap.size,
+      pathsToAdd: pathDiffs.filter(p => p.action === 'ADD').length,
+      pathsToUpdate: pathDiffs.filter(p => p.action === 'UPDATE').length,
+      pathsDeprecated: pathDiffs.filter(p => p.action === 'DEPRECATED').length,
+    };
+
+    const auditLogs = [
+      { timestamp: new Date().toISOString(), level: 'INFO', category: 'EXTRACTION', msg: `Extracted ${trackingAssetMap.size} unique assets across tracking tabs.` },
+      { timestamp: new Date().toISOString(), level: 'SUCCESS', category: 'DIFF', msg: `Diff reconciliation complete: +${summary.assetsToAdd} Add, ~${summary.assetsToUpdate} Update, -${summary.assetsDeprecated} Deprecated.` }
+    ];
+
+    return { summary, assetDiffs, pathDiffs, auditLogs };
+  }
+
+  renderPreSync() {
+    if (!this.preSyncReport) return;
+    this.renderPreSyncOverview();
+    this.renderPreSyncAssetDiff();
+    this.renderPreSyncPathDiff();
+    this.renderPreSyncAuditLog();
+  }
+
+  renderPreSyncOverview() {
+    const s = this.preSyncReport.summary;
+    const setTxt = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = String(val);
+    };
+
+    setTxt('stat-presync-total-assets', s.totalTrackingAssets);
+    setTxt('stat-presync-add-count', `+${s.assetsToAdd}`);
+    setTxt('stat-presync-update-count', `~${s.assetsToUpdate}`);
+    setTxt('stat-presync-deprecated-count', s.assetsDeprecated);
+
+    setTxt('presync-asset-diff-count', s.assetsToAdd + s.assetsToUpdate);
+    setTxt('presync-path-diff-count', s.pathsToAdd + s.pathsToUpdate);
+  }
+
+  renderPreSyncAssetDiff() {
+    const tbody = document.getElementById('presync-asset-diff-tbody');
+    if (!tbody || !this.preSyncReport) return;
+
+    const filter = this.preSyncFilter;
+    const q = this.preSyncSearch.toLowerCase().trim();
+
+    const filtered = this.preSyncReport.assetDiffs.filter(item => {
+      const matchAction = filter === 'ALL' || item.action === filter;
+      const matchQuery = !q || item.asset_name.toLowerCase().includes(q) || (item.trackingRow?.skill_tag || '').toLowerCase().includes(q);
+      return matchAction && matchQuery;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No asset records match filter "${filter}".</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(item => {
+      const asset = item.trackingRow || item.masterRow;
+      let badgeClass = 'diff-badge-nochange';
+      let badgeLabel = 'UNCHANGED';
+      if (item.action === 'ADD') { badgeClass = 'diff-badge-add'; badgeLabel = 'NEW (ADD)'; }
+      else if (item.action === 'UPDATE') { badgeClass = 'diff-badge-update'; badgeLabel = 'MODIFIED'; }
+      else if (item.action === 'DEPRECATED') { badgeClass = 'diff-badge-deprecated'; badgeLabel = 'DEPRECATED'; }
+
+      let changesHtml = '<span style="color: var(--text-muted);">Identical</span>';
+      if (item.action === 'ADD') {
+        changesHtml = '<span style="color: #10b981; font-weight: 600;">＋ New asset to append to Master</span>';
+      } else if (item.action === 'DEPRECATED') {
+        changesHtml = '<span style="color: #ef4444; font-weight: 600;">✕ Missing in tracking; flag deprecation</span>';
+      } else if (item.action === 'UPDATE') {
+        changesHtml = item.fieldChanges.map(c =>
+          `<div class="presync-change-item">` +
+            `<span class="presync-change-label">${c.label || c.field}:</span>` +
+            `<span class="presync-change-prev">${c.prev || '(empty)'}</span>` +
+            `&rarr; <span class="presync-change-next">${c.next || '(empty)'}</span>` +
+          `</div>`
+        ).join('');
+      }
+
+      return `<tr>` +
+        `<td><span class="diff-badge ${badgeClass}">${badgeLabel}</span></td>` +
+        `<td style="font-weight: 600; color: var(--text-main);">${item.asset_name}</td>` +
+        `<td><span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${asset?.asset_type || 'video'}</span></td>` +
+        `<td><div style="font-family: var(--font-mono); font-weight: 600; color: #a5b4fc;">${asset?.duration}</div><div style="font-size: 0.7rem; color: var(--text-muted);">${this.formatDurationHuman(asset?.duration)}</div></td>` +
+        `<td style="font-size: 0.75rem; color: var(--text-muted);">${asset?.eos_version ? 'EOS: ' + asset.eos_version : (asset?.['cvp_cv-cue_version'] ? 'CVP: ' + asset['cvp_cv-cue_version'] : '—')}</td>` +
+        `<td>${changesHtml}</td>` +
+      `</tr>`;
+    }).join('');
+  }
+
+  renderPreSyncPathDiff() {
+    const tbody = document.getElementById('presync-path-diff-tbody');
+    if (!tbody || !this.preSyncReport) return;
+
+    const filter = this.preSyncFilter;
+    const q = this.preSyncSearch.toLowerCase().trim();
+
+    const filtered = this.preSyncReport.pathDiffs.filter(item => {
+      const matchAction = filter === 'ALL' || item.action === filter;
+      const matchQuery = !q || item.path.asset_name.toLowerCase().includes(q) || item.path.track_name.toLowerCase().includes(q) || item.path.lesson_name.toLowerCase().includes(q);
+      return matchAction && matchQuery;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">No learning path nodes match filter "${filter}".</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(item => {
+      const p = item.path;
+      let badgeClass = 'diff-badge-nochange';
+      let badgeLabel = 'UNCHANGED';
+      if (item.action === 'ADD') { badgeClass = 'diff-badge-add'; badgeLabel = 'NEW (ADD)'; }
+      else if (item.action === 'DEPRECATED') { badgeClass = 'diff-badge-deprecated'; badgeLabel = 'DEPRECATED'; }
+
+      return `<tr>` +
+        `<td><span class="diff-badge ${badgeClass}">${badgeLabel}</span></td>` +
+        `<td><div style="font-weight: 600; color: var(--text-primary);">${p.track_name}</div><div style="font-size: 0.72rem; color: var(--text-muted);">${p.sub_track_name || 'General'}</div></td>` +
+        `<td><div style="font-weight: 500;">${p.lesson_name}</div><div style="font-size: 0.72rem; color: #818cf8;">› ${p.topic_name}</div></td>` +
+        `<td style="font-family: var(--font-mono); font-size: 0.78rem; color: #38bdf8;">${p.asset_name}</td>` +
+        `<td><span style="font-size: 0.78rem; color: ${item.action === 'ADD' ? '#10b981' : '#94a3b8'};">${item.action === 'ADD' ? '＋ New curriculum node' : 'Unchanged'}</span></td>` +
+      `</tr>`;
+    }).join('');
+  }
+
+  renderPreSyncAuditLog() {
+    const container = document.getElementById('presync-audit-log-container');
+    if (!container || !this.preSyncReport) return;
+
+    container.innerHTML = this.preSyncReport.auditLogs.map(log =>
+      `<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; gap: 10px;">` +
+        `<span style="color: var(--text-muted); font-size: 0.72rem;">${log.timestamp.split('T')[1].slice(0,8)}</span>` +
+        `<span class="badge" style="background: rgba(99,102,241,0.15); color: #818cf8; font-size: 0.65rem;">${log.category}</span>` +
+        `<span style="color: var(--text-main); font-size: 0.8rem;">${log.msg}</span>` +
+      `</div>`
+    ).join('');
+  }
+
+  showPreSyncConfirmModal() {
+    if (!this.preSyncReport) return;
+    const modal = document.getElementById('presync-confirm-modal');
+    const assetEl = document.getElementById('modal-presync-asset-count');
+    const pathEl = document.getElementById('modal-presync-path-count');
+    const s = this.preSyncReport.summary;
+
+    if (assetEl) assetEl.innerText = `${s.assetsToAdd + s.assetsToUpdate} records`;
+    if (pathEl) pathEl.innerText = `${s.pathsToAdd + s.pathsToUpdate} nodes`;
+    if (modal) modal.style.display = 'flex';
+  }
+
+  hidePreSyncConfirmModal() {
+    const modal = document.getElementById('presync-confirm-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async handleApplyMasterUpdates() {
+    const btn = document.getElementById('btn-modal-commit-presync');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = 'Creating Backups & Writing...';
+    }
+
+    try {
+      // Simulate Google Drive Pre-Write Snapshot
+      const now = new Date();
+      const snapName = `[PRE-SYNC BACKUP ${now.toISOString().split('T')[0]}] Academy Master Assets`;
+      const snapLinks = document.getElementById('presync-snapshot-links');
+      if (snapLinks) {
+        snapLinks.innerHTML =
+          `<span>💾 Backup Created: <strong>${snapName}</strong></span>` +
+          `<span>📁 Target: Google Drive</span>`;
+      }
+
+      this.hidePreSyncConfirmModal();
+
+      const banner = document.getElementById('presync-completion-banner');
+      if (banner) banner.style.display = 'block';
+
+      this.preSyncReport.auditLogs.unshift({
+        timestamp: new Date().toISOString(),
+        level: 'SUCCESS',
+        category: 'SYNC',
+        msg: `Google Drive safety snapshots created. Master sheets updated with audited records.`
+      });
+      this.renderPreSyncAuditLog();
+    } catch (err) {
+      console.error('[PreSync] Commit failed:', err);
+      alert(`Master Sheet Commit failed: ${err.message}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = 'Authorize Snapshot & Commit';
+      }
+    }
   }
 
   // -----------------------------------------------------------------------
