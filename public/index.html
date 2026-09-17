@@ -170,7 +170,6 @@
             <button
               id="btn-toggle-presync-config"
               class="action-btn"
-              onclick="app.togglePreSyncConfig()"
               style="padding: 8px 14px; font-size: 0.8rem;"
             >
               ⚙️ Sheet Sources
@@ -178,7 +177,6 @@
             <button
               id="btn-load-presync-sample"
               class="action-btn"
-              onclick="app.handleRunPreSyncDiff(true)"
               style="padding: 8px 14px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.3);"
               title="Audit representative multi-tab reference dataset"
             >
@@ -187,7 +185,6 @@
             <button
               id="btn-run-presync-diff"
               class="submit-btn"
-              onclick="app.handleRunPreSyncDiff(false)"
               style="padding: 9px 18px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;"
             >
               <span id="presync-diff-icon">🔄</span>
@@ -245,21 +242,21 @@
 
         <!-- AES v3 Pill Navigation Bar -->
         <div class="presync-pill-bar">
-          <button class="presync-pill active" id="pill-presync-overview" onclick="app.switchPreSyncSubTab('overview')">
+          <button class="presync-pill active" id="pill-presync-overview">
             <span>📊</span>
             <span>Sync Overview</span>
           </button>
-          <button class="presync-pill" id="pill-presync-asset-diff" onclick="app.switchPreSyncSubTab('asset-diff')">
+          <button class="presync-pill" id="pill-presync-asset-diff">
             <span>🎬</span>
             <span>Asset Diff</span>
             <span class="presync-pill-count" id="presync-asset-diff-count">0</span>
           </button>
-          <button class="presync-pill" id="pill-presync-path-diff" onclick="app.switchPreSyncSubTab('path-diff')">
+          <button class="presync-pill" id="pill-presync-path-diff">
             <span>🌿</span>
             <span>Learning Path Diff</span>
             <span class="presync-pill-count" id="presync-path-diff-count">0</span>
           </button>
-          <button class="presync-pill" id="pill-presync-audit-log" onclick="app.switchPreSyncSubTab('audit-log')">
+          <button class="presync-pill" id="pill-presync-audit-log">
             <span>📜</span>
             <span>Audit Log</span>
           </button>
@@ -268,7 +265,6 @@
             <button
               id="btn-apply-master-updates"
               class="action-btn"
-              onclick="app.showPreSyncConfirmModal()"
               style="display: none; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981; font-weight: 600; padding: 7px 16px; font-size: 0.82rem;"
             >
               ✓ Apply Updates to Master Sheets
@@ -280,7 +276,7 @@
         <div id="presync-subtab-overview">
           <!-- Summary Cards -->
           <div class="stats-grid" style="margin-bottom: 24px;">
-            <div class="stat-card clickable-card" id="card-presync-total" onclick="app.handlePreSyncCardClick('ALL')" title="Click to view all assets in diff viewer">
+            <div class="stat-card clickable-card" id="card-presync-total" title="Click to view all assets in diff viewer">
               <div class="stat-icon">📄</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-total-assets">—</div>
@@ -289,7 +285,7 @@
               </div>
             </div>
 
-            <div class="stat-card clickable-card" id="card-presync-add" onclick="app.handlePreSyncCardClick('ADD')" style="border-left: 4px solid #10b981;" title="Click to view new additions in diff viewer">
+            <div class="stat-card clickable-card" id="card-presync-add" style="border-left: 4px solid #10b981;" title="Click to view new additions in diff viewer">
               <div class="stat-icon" style="color: #10b981;">＋</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-add-count" style="color: #10b981;">—</div>
@@ -298,7 +294,7 @@
               </div>
             </div>
 
-            <div class="stat-card clickable-card" id="card-presync-update" onclick="app.handlePreSyncCardClick('UPDATE')" style="border-left: 4px solid #f59e0b;" title="Click to view modified assets in diff viewer">
+            <div class="stat-card clickable-card" id="card-presync-update" style="border-left: 4px solid #f59e0b;" title="Click to view modified assets in diff viewer">
               <div class="stat-icon" style="color: #f59e0b;">✎</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-update-count" style="color: #f59e0b;">—</div>
@@ -307,7 +303,7 @@
               </div>
             </div>
 
-            <div class="stat-card clickable-card" id="card-presync-deprecated" onclick="app.handlePreSyncCardClick('DEPRECATED')" style="border-left: 4px solid #ef4444;" title="Click to view deprecated assets in diff viewer">
+            <div class="stat-card clickable-card" id="card-presync-deprecated" style="border-left: 4px solid #ef4444;" title="Click to view deprecated assets in diff viewer">
               <div class="stat-icon" style="color: #ef4444;">✕</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-deprecated-count" style="color: #ef4444;">—</div>
