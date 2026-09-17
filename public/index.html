@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3.1.0">
   <script type="module" src="./library-auth.js"></script>
 </head>
 <body>
@@ -168,6 +168,7 @@
 
           <div style="display: flex; align-items: center; gap: 10px;">
             <button
+              id="btn-toggle-presync-config"
               class="action-btn"
               onclick="app.togglePreSyncConfig()"
               style="padding: 8px 14px; font-size: 0.8rem;"
@@ -175,6 +176,7 @@
               ⚙️ Sheet Sources
             </button>
             <button
+              id="btn-load-presync-sample"
               class="action-btn"
               onclick="app.handleRunPreSyncDiff(true)"
               style="padding: 8px 14px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.3);"
@@ -278,35 +280,39 @@
         <div id="presync-subtab-overview">
           <!-- Summary Cards -->
           <div class="stats-grid" style="margin-bottom: 24px;">
-            <div class="stat-card">
+            <div class="stat-card clickable-card" id="card-presync-total" onclick="app.handlePreSyncCardClick('ALL')" title="Click to view all assets in diff viewer">
               <div class="stat-icon">📄</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-total-assets">—</div>
                 <div class="stat-label">Source Tracking Assets</div>
+                <div class="stat-hint">View all assets in diff &rarr;</div>
               </div>
             </div>
 
-            <div class="stat-card" style="border-left: 4px solid #10b981;">
+            <div class="stat-card clickable-card" id="card-presync-add" onclick="app.handlePreSyncCardClick('ADD')" style="border-left: 4px solid #10b981;" title="Click to view new additions in diff viewer">
               <div class="stat-icon" style="color: #10b981;">＋</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-add-count" style="color: #10b981;">—</div>
                 <div class="stat-label">New Additions (ADD)</div>
+                <div class="stat-hint" style="color: #10b981;">Filter new additions &rarr;</div>
               </div>
             </div>
 
-            <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+            <div class="stat-card clickable-card" id="card-presync-update" onclick="app.handlePreSyncCardClick('UPDATE')" style="border-left: 4px solid #f59e0b;" title="Click to view modified assets in diff viewer">
               <div class="stat-icon" style="color: #f59e0b;">✎</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-update-count" style="color: #f59e0b;">—</div>
                 <div class="stat-label">Modified (UPDATE)</div>
+                <div class="stat-hint" style="color: #f59e0b;">Filter modified records &rarr;</div>
               </div>
             </div>
 
-            <div class="stat-card" style="border-left: 4px solid #ef4444;">
+            <div class="stat-card clickable-card" id="card-presync-deprecated" onclick="app.handlePreSyncCardClick('DEPRECATED')" style="border-left: 4px solid #ef4444;" title="Click to view deprecated assets in diff viewer">
               <div class="stat-icon" style="color: #ef4444;">✕</div>
               <div class="stat-info">
                 <div class="stat-value" id="stat-presync-deprecated-count" style="color: #ef4444;">—</div>
                 <div class="stat-label">Deprecated / Missing</div>
+                <div class="stat-hint" style="color: #ef4444;">Filter deprecated assets &rarr;</div>
               </div>
             </div>
           </div>
@@ -939,7 +945,7 @@
       });
     }
   </script>
-  <script src="app.js"></script>
+  <script src="app.js?v=3.1.0"></script>
 </body>
 </html>
 

@@ -204,6 +204,9 @@ class AcademyLibraryApp {
 
     // Start logs polling (Firestore-native, no API server needed)
     this.startLogsPolling();
+
+    // Pre-compute Stage 1 Pre-Sync diff in background for instant UI reactivity
+    this.handleRunPreSyncDiff(true);
   }
 
   setupEventListeners() {
@@ -253,6 +256,38 @@ class AcademyLibraryApp {
 
     const refreshHistory = document.getElementById('btn-refresh-history');
     if (refreshHistory) refreshHistory.addEventListener('click', () => this.loadHistory());
+
+    // Master Sheet Pre-Sync controls
+    const btnToggleConfig = document.getElementById('btn-toggle-presync-config');
+    if (btnToggleConfig) btnToggleConfig.addEventListener('click', () => this.togglePreSyncConfig());
+
+    const btnLoadSample = document.getElementById('btn-load-presync-sample');
+    if (btnLoadSample) btnLoadSample.addEventListener('click', () => this.handleRunPreSyncDiff(true));
+
+    const btnRunDiff = document.getElementById('btn-run-presync-diff');
+    if (btnRunDiff) btnRunDiff.addEventListener('click', () => this.handleRunPreSyncDiff(false));
+
+    const btnApplyUpdates = document.getElementById('btn-apply-master-updates');
+    if (btnApplyUpdates) btnApplyUpdates.addEventListener('click', () => this.showPreSyncConfirmModal());
+
+    // Pre-Sync Pills
+    ['overview', 'asset-diff', 'path-diff', 'audit-log'].forEach(subTab => {
+      const pill = document.getElementById(`pill-presync-${subTab}`);
+      if (pill) pill.addEventListener('click', () => this.switchPreSyncSubTab(subTab));
+    });
+
+    // Pre-Sync Interactive Metric Cards
+    const cardTotal = document.getElementById('card-presync-total');
+    if (cardTotal) cardTotal.addEventListener('click', () => this.handlePreSyncCardClick('ALL'));
+
+    const cardAdd = document.getElementById('card-presync-add');
+    if (cardAdd) cardAdd.addEventListener('click', () => this.handlePreSyncCardClick('ADD'));
+
+    const cardUpdate = document.getElementById('card-presync-update');
+    if (cardUpdate) cardUpdate.addEventListener('click', () => this.handlePreSyncCardClick('UPDATE'));
+
+    const cardDeprecated = document.getElementById('card-presync-deprecated');
+    if (cardDeprecated) cardDeprecated.addEventListener('click', () => this.handlePreSyncCardClick('DEPRECATED'));
   }
 
   setupModalDismiss() {
@@ -936,6 +971,18 @@ class AcademyLibraryApp {
     this.renderPreSyncPathDiff();
   }
 
+  handlePreSyncCardClick(filter) {
+    if (!this.preSyncReport) {
+      this.handleRunPreSyncDiff(true).then(() => {
+        this.switchPreSyncSubTab('asset-diff');
+        this.setPreSyncActionFilter(filter);
+      });
+      return;
+    }
+    this.switchPreSyncSubTab('asset-diff');
+    this.setPreSyncActionFilter(filter);
+  }
+
   // Helper: Normalizes duration to strict ISO 8601 (PT##H##M##S)
   parseDurationToIso(input) {
     if (!input) return 'PT00H00M00S';
@@ -992,20 +1039,93 @@ class AcademyLibraryApp {
     const diffText = document.getElementById('presync-diff-text');
     if (diffBtn) diffBtn.disabled = true;
     if (diffIcon) diffIcon.innerText = '⏳';
-    if (diffText) diffText.innerText = 'Analyzing Sheets...';
+    if (diffText) diffText.innerText = useMock ? 'Loading Sample...' : 'Auditing Sheets...';
 
     try {
-      // 1. Load sample or live data
       const sample = this.getPreSyncSampleData();
+      let masterAssets = sample.masterAssets;
+      let masterPaths = sample.masterPaths;
+      let isLiveFetch = false;
+
+      if (!useMock) {
+        try {
+          const assetsId = document.getElementById('presync-target-assets-id')?.value?.trim() || '1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww';
+          const pathsId = document.getElementById('presync-target-paths-id')?.value?.trim() || '1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988';
+          const assetsCsvUrl = `https://docs.google.com/spreadsheets/d/${assetsId}/export?format=csv`;
+          const pathsCsvUrl = `https://docs.google.com/spreadsheets/d/${pathsId}/export?format=csv`;
+
+          const [assetsRes, pathsRes] = await Promise.all([
+            fetch(assetsCsvUrl),
+            fetch(pathsCsvUrl)
+          ]);
+
+          if (assetsRes.ok && pathsRes.ok) {
+            const aText = await assetsRes.text();
+            const pText = await pathsRes.text();
+            const aRows = parseCsvRows(aText);
+            const pRows = parseCsvRows(pText);
+
+            if (aRows.length > 1) {
+              const aHeaders = aRows[0].map(h => h.trim().toLowerCase().replace(/[\s-]/g, '_'));
+              const nameIdx = aHeaders.indexOf('asset_name');
+              const durIdx = aHeaders.indexOf('duration');
+              const eosIdx = aHeaders.indexOf('eos_version');
+              const typeIdx = aHeaders.indexOf('asset_type');
+              const tagIdx = aHeaders.indexOf('skill_tag');
+
+              if (nameIdx !== -1) {
+                masterAssets = aRows.slice(1).map(r => ({
+                  asset_name: r[nameIdx] || '',
+                  asset_type: (typeIdx !== -1 && r[typeIdx]) || 'video',
+                  duration: this.parseDurationToIso(durIdx !== -1 ? r[durIdx] : ''),
+                  skill_tag: (tagIdx !== -1 && r[tagIdx]) || '',
+                  eos_version: (eosIdx !== -1 && r[eosIdx]) || '',
+                })).filter(a => Boolean(a.asset_name));
+              }
+            }
+
+            if (pRows.length > 1) {
+              const pHeaders = pRows[0].map(h => h.trim().toLowerCase().replace(/[\s-]/g, '_'));
+              const tIdx = pHeaders.indexOf('track_name');
+              const stIdx = pHeaders.indexOf('sub_track_name');
+              const lIdx = pHeaders.indexOf('lesson_name');
+              const topIdx = pHeaders.indexOf('topic_name');
+              const aIdx = pHeaders.indexOf('asset_name');
+
+              if (aIdx !== -1) {
+                masterPaths = pRows.slice(1).map(r => ({
+                  track_name: (tIdx !== -1 && r[tIdx]) || 'General',
+                  sub_track_name: (stIdx !== -1 && r[stIdx]) || 'General',
+                  lesson_name: (lIdx !== -1 && r[lIdx]) || 'General Lesson',
+                  topic_name: (topIdx !== -1 && r[topIdx]) || 'General Topic',
+                  asset_name: r[aIdx] || '',
+                })).filter(p => Boolean(p.asset_name));
+              }
+            }
+            isLiveFetch = true;
+          }
+        } catch (fetchErr) {
+          console.warn('[PreSync] Live fetch fell back to baseline:', fetchErr);
+        }
+      }
+
       const extracted = this.extractPreSyncHierarchy(sample.trackingTabs);
 
-      // 2. Reconcile against target master sheets
       const report = this.reconcilePreSyncData(
         extracted.assets,
-        sample.masterAssets,
+        masterAssets,
         extracted.learningPaths,
-        sample.masterPaths
+        masterPaths
       );
+
+      if (isLiveFetch) {
+        report.auditLogs.unshift({
+          timestamp: new Date().toISOString(),
+          level: 'SUCCESS',
+          category: 'LIVE_SHEETS',
+          msg: `Connected live Google Sheets: audited ${extracted.assets.length} tracking records against ${masterAssets.length} live master rows.`
+        });
+      }
 
       this.preSyncReport = report;
       this.renderPreSync();
@@ -1507,4 +1627,8 @@ class AcademyLibraryApp {
 
 const app = new AcademyLibraryApp();
 window.app = app;
-document.addEventListener('DOMContentLoaded', () => app.init());
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => app.init());
+} else {
+  app.init();
+}

@@ -1343,3 +1343,38 @@ dialog::backdrop {
   font-family: var(--font-mono, monospace);
 }
 
+/* Interactive Pre-Sync Metric Cards */
+.stat-card.clickable-card {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+  user-select: none;
+  position: relative;
+}
+
+.stat-card.clickable-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.stat-card.clickable-card:active {
+  transform: translateY(0);
+}
+
+.stat-card.clickable-card .stat-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.75;
+  transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.stat-card.clickable-card:hover .stat-hint {
+  opacity: 1;
+  color: #818cf8;
+}
+
