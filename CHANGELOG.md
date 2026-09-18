@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.0 (2026-09-18)
+
+### Features
+* **sync:** upgrade Master Sheet Synchronization Engine (`Stage 1 Pre-Sync ETL`) to **R.A.E.S. Version 3 Standards**
+* **ai-extractor:** implement `Agent-Tracking` semantic AI source extractor with Gemini API structured JSON schema parsing and layout-aware heuristic engine
+* **reconciler:** implement 4-agent audit and diagnostic protocol (`Agent-Tracking`, `Agent-MasterAssets`, `Agent-MasterPaths`, and `Agent-Arbiter`)
+* **reconciler:** introduce sequential sub-topic numbering and re-indexing algorithm (`normalizeSequentialSubTopics`)
+* **writer:** enhance Google Sheets batch writer with bounded ranges (`A1:L` for Assets, `A1:K` for Paths) and Google Drive pre-write snapshot backups
+* **ui:** implement R.A.E.S. Version 3 UI with inverted active pill navigation, semantic status badges, and multi-agent diagnostic cards
+
+### Bug Fixes
+* **hierarchy:** resolve structural blind spot in curriculum hierarchy where consecutive sub-topics were dropped (restoring `Automation Fundamentals -> Lesson 5 -> Topic 1 -> Sub Topic 3: CloudVision and Device Communication`)
+
 ## 1.0.0 (2026-08-30)
 
 

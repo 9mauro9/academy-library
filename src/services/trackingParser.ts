@@ -279,7 +279,12 @@ export function parseTrackingTab(
       state.topicNumber = parseNumber(rawTopicNum);
     }
     if (rawTopicDesc && !rawTopicName) {
-      state.topicDescription = sanitizeString(rawTopicDesc);
+      const sanitized = sanitizeString(rawTopicDesc);
+      if (sanitized) {
+        state.topicDescription = state.topicDescription
+          ? `${state.topicDescription} ${sanitized}`
+          : sanitized;
+      }
     }
 
     // 5. Extract asset_name (Definitive Primary Join Key)
@@ -302,6 +307,7 @@ export function parseTrackingTab(
     state.subTopicNumber += 1;
     const explicitSubTopicNum = parseNumber(getCell(colIdx.subTopicNum));
     const subTopicNumber = explicitSubTopicNum !== null ? explicitSubTopicNum : state.subTopicNumber;
+
 
     // 6. Build MasterLearningPathRow
     const learningPathRow: MasterLearningPathRow = {
@@ -414,8 +420,18 @@ export function extractTrackingWorkbook(
           comments: existing.comments ? `${existing.comments}; ${asset.comments}` : asset.comments,
         };
         assetMap.set(asset.asset_name, merged);
+
+        auditLogs.push({
+          id: `log-${Date.now()}-dup-${asset.asset_name}`,
+          timestamp: new Date().toISOString(),
+          level: 'WARN',
+          category: 'VALIDATION',
+          message: `Duplicate asset_name '${asset.asset_name}' detected in tracking sheet tab '${tabName}'. Metadata merged.`,
+          details: { asset_name: asset.asset_name, tabName },
+        });
       }
     }
+
 
     auditLogs.push({
       id: `log-${Date.now()}-${tabName}`,

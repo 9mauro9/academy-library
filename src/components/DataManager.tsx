@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchTopics, saveTopicsList, triggerEmbeddingGeneration } from '../services/firebaseService';
 import { Database, FileSpreadsheet, UploadCloud, RefreshCw, CheckCircle, AlertTriangle, GitCompare } from 'lucide-react';
-import { MasterSheetSyncModule } from './admin/MasterSheetSyncModule';
+import { MasterSheetSyncEngine } from './admin/MasterSheetSyncEngine';
 
 export const DataManager: React.FC = () => {
   const [sheetUrl, setSheetUrl] = useState('');
@@ -219,7 +219,7 @@ export const DataManager: React.FC = () => {
       </div>
 
       {activeEngineMode === 'presync' ? (
-        <MasterSheetSyncModule />
+        <MasterSheetSyncEngine />
       ) : (
         <>
           {message.text && (

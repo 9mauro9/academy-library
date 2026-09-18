@@ -90,7 +90,7 @@ export interface MasterLearningPathRow {
  * Raw Tracking Sheet cell dictionary (human-maintained unstructured sheet)
  */
 export interface RawTrackingRow {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -104,14 +104,14 @@ export interface TrackingTabExtraction {
   unresolvedRows: Array<{
     rowIndex: number;
     reason: string;
-    rawContent: Record<string, any>;
+    rawContent: Record<string, unknown>;
   }>;
 }
 
 /**
  * Granular Field Change record for reconciliation diffs
  */
-export interface FieldDiff<T = any> {
+export interface FieldDiff<T = unknown> {
   field: string;
   previousValue: T;
   proposedValue: T;
@@ -161,7 +161,19 @@ export interface ReconciliationSummary {
   pathsToUpdate: number;
   pathsUnchanged: number;
   pathsDeprecated: number;
+  validationErrorCount: number;
   generatedAt: string;
+}
+
+/**
+ * Validation Error specification for source tracking anomalies
+ */
+export interface ValidationError {
+  type: 'DUPLICATE_PRIMARY_KEY' | 'SCHEMA_VIOLATION' | 'INVALID_DURATION' | 'INVALID_HIERARCHY';
+  asset_name: string;
+  message: string;
+  locations?: string[];
+  severity: 'ERROR' | 'WARN';
 }
 
 /**
@@ -173,7 +185,7 @@ export interface AuditLogEntry {
   level: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS';
   category: 'EXTRACTION' | 'DIFF' | 'BACKUP' | 'SYNC' | 'VALIDATION';
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -189,6 +201,41 @@ export interface ReconciliationReport {
   assetDiffs: AssetDiffItem[];
   learningPathDiffs: LearningPathDiffItem[];
   auditLogs: AuditLogEntry[];
+  validationErrors: ValidationError[];
+  hasValidationErrors: boolean;
+  canCommit: boolean;
+  multiAgentReport?: MultiAgentAuditReport;
+}
+
+/**
+ * Diagnostic status for the 4-agent audit protocol
+ */
+export type AgentStatus = 'IDLE' | 'RUNNING' | 'HEALTHY' | 'WARNING' | 'ERROR';
+
+/**
+ * Diagnostic record produced by an individual sub-agent
+ */
+export interface AgentDiagnostic {
+  agentId: 'Agent-Tracking' | 'Agent-MasterAssets' | 'Agent-MasterPaths' | 'Agent-Arbiter';
+  agentName: string;
+  role: string;
+  status: AgentStatus;
+  itemsProcessed: number;
+  discrepanciesDetected: number;
+  droppedItemsPrevented?: number;
+  findings: string[];
+  executionDurationMs: number;
+}
+
+/**
+ * Comprehensive 4-Agent Audit & Diagnostic Report
+ */
+export interface MultiAgentAuditReport {
+  trackingAgent: AgentDiagnostic;
+  masterAssetsAgent: AgentDiagnostic;
+  masterPathsAgent: AgentDiagnostic;
+  arbiterAgent: AgentDiagnostic;
+  overallHealth: 'HEALTHY' | 'WARNING' | 'ERROR';
 }
 
 /**
@@ -232,6 +279,17 @@ export interface SyncExecutionResult {
 }
 
 /**
+ * Stage 2 Firestore Ingestion Response schema
+ */
+export interface Stage2SyncResponse {
+  success: boolean;
+  assets_count?: number;
+  curriculum_count?: number;
+  error?: string;
+  details?: string;
+}
+
+/**
  * Configuration for Master Sheet IDs and authentication options
  */
 export interface MasterSheetsConfig {
@@ -240,4 +298,7 @@ export interface MasterSheetsConfig {
   masterLearningPathsSpreadsheetId: string;
   googleApiKey?: string;
   accessToken?: string;
+  geminiApiKey?: string;
+  useAiExtraction?: boolean;
 }
+

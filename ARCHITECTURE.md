@@ -15,10 +15,18 @@ This document outlines the visual system architecture, processing flows, caching
 
 ```mermaid
 graph TD
-    subgraph "Stage 1: Reference Source & Pre-Sync ETL"
+    subgraph "Stage 1: Reference Source & Pre-Sync ETL (R.A.E.S. v3)"
         TRACK["Source: Academy Tracking (Google Drive)"]
-        PRE_SYNC["Master Sheet Synchronization Engine (Pre-Sync Engine)"]
+        
+        subgraph "Multi-Agent Audit & Reconciliation Protocol"
+            A1["Agent 1: Agent-Tracking (Gemini API & Semantic Layout Extractor)"]
+            A2["Agent 2: Agent-MasterAssets (Catalog Auditor - PK: asset_name)"]
+            A3["Agent 3: Agent-MasterPaths (Hierarchy Auditor - FK: asset_name)"]
+            A4["Agent 4: Agent-Arbiter (Reconciliation & Diff Engine)"]
+        end
+
         DRIVE_BACKUP[("Google Drive Pre-Write Snapshots")]
+        BATCH_WRITER["Bounded Sheets Batch Writer (A1:L & A1:K)"]
     end
 
     subgraph "Intermediate Master Sheets (Google Drive)"
@@ -45,10 +53,16 @@ graph TD
         AUTH[Firebase Auth - Google / Apple OAuth, Email/Password & RBAC]
     end
 
-    TRACK --> PRE_SYNC
-    PRE_SYNC -->|1. Pre-Write Safety Snapshot| DRIVE_BACKUP
-    PRE_SYNC -->|2. Audit & Write Master Assets| GS1
-    PRE_SYNC -->|3. Audit & Write Master Paths| GS2
+    TRACK --> A1
+    GS1 --> A2
+    GS2 --> A3
+    A1 --> A4
+    A2 --> A4
+    A3 --> A4
+    A4 -->|Safety Gate Authorized| DRIVE_BACKUP
+    A4 -->|Safety Gate Authorized| BATCH_WRITER
+    BATCH_WRITER -->|Write Bounded Range A1:L| GS1
+    BATCH_WRITER -->|Write Bounded Range A1:K| GS2
 
     GS1 --> GS_API
     GS2 --> GS_API
@@ -68,13 +82,19 @@ graph TD
     IN -->|Vector Search & Document Lookup| FS
 ```
 
-### 1.1 Master Sheet Synchronization Engine (Stage 1 Pre-Sync ETL)
-The Pre-Sync Engine establishes an architectural firewall between unstructured, human-maintained curriculum sheets and downstream database collections:
-1. **Hierarchical Extraction**: Parses track-specific tabs (`DC Track`, `Campus Track`, `AI Track`) resolving merged cells, hierarchical sequencing (`Track` $\to$ `Sub-Track` $\to$ `Lesson` $\to$ `Topic` $\to$ `Sub-Topic` $\to$ `asset_name`), and metadata.
-2. **ISO 8601 Duration Normalization**: Transforms irregular human durations (`00:14:45`, `15 mins`, `1.5 hrs`) into standard `PT##H##M##S`.
-3. **Two-Way Reconciliation Diff**: Evaluates additions (`ADD`), modifications (`UPDATE`), unchanged records (`NO_CHANGE`), and deprecated items (`DEPRECATED`) with field-level telemetry.
-4. **Google Drive Pre-Write Snapshot Routine**: Automatically clones timestamped backups of `Academy Master Assets` and `Academy Master Learning Paths` to Google Drive before applying any batch modifications.
-5. **Stage 2 Handoff**: Upon completion, seamlessly passes audited master sheet data to the Firestore ingestion pipeline.
+### 1.1 Master Sheet Synchronization Engine (Stage 1 Pre-Sync ETL — R.A.E.S. Version 3)
+The Pre-Sync Engine establishes an architectural firewall between unstructured, human-maintained curriculum sheets and downstream database collections, adhering to **R.A.E.S. Version 3 Standards**:
+
+1. **4-Agent Audit & Diagnostic Protocol**:
+   - **Agent 1 (`Agent-Tracking`)**: Semantic Source Extractor utilizing Gemini API structured JSON schema parsing with an intelligent layout fallback engine. Robustly captures the 5-tier curriculum hierarchy (`Track` $\to$ `Sub-Track` $\to$ `Lesson` $\to$ `Topic` $\to$ `Sub-Topic` $\to$ `asset_name`) across multi-row merged cells and unanchored leaf cells, guaranteeing zero dropped sub-topics (specifically resolving previously lost items like `Automation Fundamentals` $\to$ `Lesson 5` $\to$ `Topic 1` $\to$ `Sub Topic 3: CloudVision and Device Communication`).
+   - **Agent 2 (`Agent-MasterAssets`)**: Catalog Auditor evaluating `Academy Master Assets` using `asset_name` as the strict Primary Key (PK). Identifies attribute drift, validates field completeness, and flags orphaned assets.
+   - **Agent 3 (`Agent-MasterPaths`)**: Hierarchy Auditor evaluating `Academy Master Learning Paths` using `asset_name` as the Foreign Key (FK). Enforces the **Sequential Sub-Topic Numbering Algorithm** (`normalizeSequentialSubTopics`) to guarantee consecutive indices ($1, 2, 3, \dots$) without gaps or duplicates.
+   - **Agent 4 (`Agent-Arbiter`)**: Reconciliation & Diff Engine synthesizing agent outputs into unified actionable payloads (`ADD`, `UPDATE`, `DEPRECATED`, `NO_CHANGE`). Gated by an automated safety gate that prevents writes if primary key collisions or unresolvable schema errors exist.
+2. **ISO 8601 Duration Normalization**: Transforms irregular human durations (`00:14:45`, `15 mins`, `1.5 hrs`) into standard ISO 8601 strings (`PT##H##M##S`).
+3. **Google Drive Pre-Write Snapshot Routine**: Automatically clones timestamped backups of `Academy Master Assets` and `Academy Master Learning Paths` in Google Drive prior to any write mutation (`POST https://www.googleapis.com/drive/v3/files/{fileId}/copy`).
+4. **Bounded Schema Writes**: Google Sheets API v4 batch updates write strictly to bounded schema ranges (`A1:L` for Assets, `A1:K` for Paths), protecting auxiliary columns (`M:Z`) containing formulas and human notes from accidental overwriting.
+5. **R.A.E.S. Version 3 UI Standards**: Header upper menu card with pill navigation, interactive state color inversion (active pill inverted fill vs soft slate resting state), semantic status badges (`ADD (NEW)` emerald, `UPDATE` amber, `DEPRECATED` rose), live multi-agent diagnostic cards, and benchmark verification diffs.
+6. **Stage 2 Handoff**: Once audited by human administrators, master sheet data is ingested into Cloud Firestore via the high-performance batch pipeline.
 
 ---
 

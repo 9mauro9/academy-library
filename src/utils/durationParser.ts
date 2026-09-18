@@ -200,5 +200,8 @@ export function formatDurationDisplay(input: unknown): string {
  */
 export function isValidIso8601Duration(val: string): boolean {
   if (!val || typeof val !== 'string') return false;
-  return /^PT(?:\d+H)?(?:\d+M)?(?:\d+S)?$/.test(val.trim().toUpperCase()) && val.trim() !== 'PT';
+  const trimmed = val.trim().toUpperCase();
+  if (!trimmed.startsWith('PT') || trimmed === 'PT') return false;
+  return /^PT(?:(?:\d+(?:\.\d+)?H)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?S)?)$/.test(trimmed);
 }
+

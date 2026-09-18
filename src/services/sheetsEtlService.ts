@@ -15,7 +15,9 @@ import type {
   MasterLearningPathRow,
   DriveSnapshotMetadata,
   MasterSheetsConfig,
+  Iso8601Duration,
 } from '../types/syncEngine';
+
 
 /**
  * Standard Header Schemas for Master Sheets
@@ -100,7 +102,7 @@ export class SheetsEtlService {
 
     const data = await resp.json();
     const title = data.properties?.title || 'Spreadsheet';
-    const sheetNames = (data.sheets || []).map((s: any) => s.properties?.title || 'Sheet1');
+    const sheetNames = (data.sheets || []).map((s: { properties?: { title?: string } }) => s.properties?.title || 'Sheet1');
     return { title, sheetNames };
   }
 
@@ -120,13 +122,15 @@ export class SheetsEtlService {
         const data = await resp.json();
         return data.values || [];
       }
-    } catch (err: any) {
-      console.warn(`Direct Sheets API v4 fetch failed: ${err.message}. Attempting CSV fallback...`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`Direct Sheets API v4 fetch failed: ${msg}. Attempting CSV fallback...`);
     }
 
     // Fallback: CSV export endpoint (useful when sheet is published or accessible via link)
     return this.fetchViaCsvExport(spreadsheetId);
   }
+
 
   /**
    * Fallback CSV fetch for public or link-shared Google Sheets
@@ -223,27 +227,27 @@ export class SheetsEtlService {
       const row = rawRows[r];
       if (!row || row.length === 0) continue;
 
-      const obj: any = {};
+      const obj: Record<string, string | number | boolean | null | undefined> = {};
       headers.forEach((h, idx) => {
         obj[h] = row[idx] !== undefined ? row[idx] : '';
       });
 
-      const assetName = (obj['asset_name'] || obj['Asset Name'] || row[0] || '').trim();
+      const assetName = String(obj['asset_name'] || obj['Asset Name'] || row[0] || '').trim();
       if (!assetName) continue;
 
       result.push({
         asset_name: assetName,
-        asset_type: (obj['asset_type'] || obj['Asset Type'] || 'video').trim(),
-        duration: (obj['duration'] || obj['Duration'] || 'PT00H00M00S').trim(),
-        difficulty_level: obj['difficulty_level'] ? parseFloat(obj['difficulty_level']) : null,
-        skill_tag: (obj['skill_tag'] || obj['Skill Tag'] || '').trim(),
-        last_updated: (obj['last_updated'] || obj['Last Updated'] || '').trim(),
-        'cvp_cv-cue_version': (obj['cvp_cv-cue_version'] || obj['cvp_version'] || '').trim(),
-        eos_version: (obj['eos_version'] || obj['EOS Version'] || '').trim(),
-        avd_version: (obj['avd_version'] || obj['AVD Version'] || '').trim(),
-        developer: (obj['developer'] || obj['Developer'] || '').trim(),
+        asset_type: String(obj['asset_type'] || obj['Asset Type'] || 'video').trim(),
+        duration: String(obj['duration'] || obj['Duration'] || 'PT00H00M00S').trim() as Iso8601Duration,
+        difficulty_level: obj['difficulty_level'] ? parseFloat(String(obj['difficulty_level'])) : null,
+        skill_tag: String(obj['skill_tag'] || obj['Skill Tag'] || '').trim(),
+        last_updated: String(obj['last_updated'] || obj['Last Updated'] || '').trim(),
+        'cvp_cv-cue_version': String(obj['cvp_cv-cue_version'] || obj['cvp_version'] || '').trim(),
+        eos_version: String(obj['eos_version'] || obj['EOS Version'] || '').trim(),
+        avd_version: String(obj['avd_version'] || obj['AVD Version'] || '').trim(),
+        developer: String(obj['developer'] || obj['Developer'] || '').trim(),
         needs_update: String(obj['needs_update']).toLowerCase() === 'true',
-        comments: (obj['comments'] || obj['Comments'] || '').trim(),
+        comments: String(obj['comments'] || obj['Comments'] || '').trim(),
       });
     }
 
@@ -264,27 +268,29 @@ export class SheetsEtlService {
       const row = rawRows[r];
       if (!row || row.length === 0) continue;
 
-      const obj: any = {};
+      const obj: Record<string, string | number | boolean | null | undefined> = {};
       headers.forEach((h, idx) => {
         obj[h] = row[idx] !== undefined ? row[idx] : '';
       });
 
-      const assetName = (obj['asset_name'] || obj['Asset Name'] || obj['sub_topic_name'] || '').trim();
+      const assetName = String(obj['asset_name'] || obj['Asset Name'] || obj['sub_topic_name'] || '').trim();
+
       if (!assetName) continue;
 
       result.push({
-        track_number: obj['track_number'] ? parseFloat(obj['track_number']) : null,
-        track_name: (obj['track_name'] || 'General').trim(),
-        sub_track_number: obj['sub_track_number'] ? parseFloat(obj['sub_track_number']) : null,
-        sub_track_name: (obj['sub_track_name'] || 'General').trim(),
-        lesson_number: obj['lesson_number'] ? parseFloat(obj['lesson_number']) : null,
-        lesson_name: (obj['lesson_name'] || 'General Lesson').trim(),
-        topic_number: obj['topic_number'] ? parseFloat(obj['topic_number']) : null,
-        topic_name: (obj['topic_name'] || 'General Topic').trim(),
-        topic_description: (obj['topic_description'] || '').trim(),
-        sub_topic_number: obj['sub_topic_number'] ? parseFloat(obj['sub_topic_number']) : null,
+        track_number: obj['track_number'] ? parseFloat(String(obj['track_number'])) : null,
+        track_name: String(obj['track_name'] || 'General').trim(),
+        sub_track_number: obj['sub_track_number'] ? parseFloat(String(obj['sub_track_number'])) : null,
+        sub_track_name: String(obj['sub_track_name'] || 'General').trim(),
+        lesson_number: obj['lesson_number'] ? parseFloat(String(obj['lesson_number'])) : null,
+        lesson_name: String(obj['lesson_name'] || 'General Lesson').trim(),
+        topic_number: obj['topic_number'] ? parseFloat(String(obj['topic_number'])) : null,
+        topic_name: String(obj['topic_name'] || 'General Topic').trim(),
+        topic_description: String(obj['topic_description'] || '').trim(),
+        sub_topic_number: obj['sub_topic_number'] ? parseFloat(String(obj['sub_topic_number'])) : null,
         asset_name: assetName,
       });
+
     }
 
     return result;
@@ -327,12 +333,18 @@ export class SheetsEtlService {
           backupUrl: `https://docs.google.com/spreadsheets/d/${data.id}/edit`,
           createdAt: now.toISOString(),
         };
+      } else if (this.config.accessToken) {
+        const errText = await resp.text();
+        throw new Error(`Google Drive pre-write snapshot failed for ${sheetDescription} (${fileId}): HTTP ${resp.status} - ${errText}`);
       }
     } catch (err) {
-      console.warn(`Drive API v3 copy request failed:`, err);
+      if (this.config.accessToken) {
+        throw err;
+      }
+      console.warn(`Drive API v3 copy request failed (sandbox/demo fallback active):`, err);
     }
 
-    // Fallback Mock snapshot for sandbox/demo or restricted environments
+    // Fallback Mock snapshot for sandbox/demo or restricted environments without access credentials
     return {
       originalFileId: fileId,
       backupFileId: `backup_${fileId}_${timestampStr}`,
@@ -341,6 +353,7 @@ export class SheetsEtlService {
       createdAt: now.toISOString(),
     };
   }
+
 
   /**
    * Transforms MasterAssetRow[] into formatted 2D values array matching schema
@@ -396,39 +409,89 @@ export class SheetsEtlService {
   }
 
   /**
-   * Writes formatted values into target Google Sheet via spreadsheets.values.batchUpdate
+   * Writes formatted values into target Google Sheet via spreadsheets.values.batchUpdate.
+   * Chunks large updates into batches (default 500 rows) and applies exponential backoff
+   * to respect Google Sheets API quotas (300 requests/min per project).
    */
   async writeSheetValues(
     spreadsheetId: string,
     range: string,
-    values: (string | number | boolean | null)[][]
+    values: (string | number | boolean | null)[][],
+    chunkSize = 500
   ): Promise<{ updatedCells: number; updatedRows: number }> {
-    const url = this.appendApiKey(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`);
-    const payload = {
-      valueInputOption: 'USER_ENTERED',
-      data: [
-        {
-          range,
-          values,
-        },
-      ],
-    };
-
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(payload),
-    });
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`Sheets values:batchUpdate failed for ${spreadsheetId}: ${errText}`);
+    if (!values || values.length === 0) {
+      return { updatedCells: 0, updatedRows: 0 };
     }
 
-    const result = await resp.json();
+    let totalUpdatedCells = 0;
+    let totalUpdatedRows = 0;
+
+    // Parse base sheet name and start column/row from range (e.g. 'Sheet1!A1' or 'A1')
+    const rangeMatch = range.match(/^(?:'([^']+)'!|([^!]+)!)?([A-Za-z]+)(\d+)?$/);
+    const sheetPrefix = rangeMatch ? (rangeMatch[1] || rangeMatch[2] ? `'${rangeMatch[1] || rangeMatch[2]}'!`: '') : '';
+    const startCol = rangeMatch ? rangeMatch[3] : 'A';
+    const startRow = rangeMatch && rangeMatch[4] ? parseInt(rangeMatch[4], 10) : 1;
+
+    for (let offset = 0; offset < values.length; offset += chunkSize) {
+      const chunk = values.slice(offset, offset + chunkSize);
+      const currentStartRow = startRow + offset;
+      const currentRange = `${sheetPrefix}${startCol}${currentStartRow}`;
+
+      const url = this.appendApiKey(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`);
+      const payload = {
+        valueInputOption: 'USER_ENTERED',
+        data: [
+          {
+            range: currentRange,
+            values: chunk,
+          },
+        ],
+      };
+
+      // Retry with exponential backoff on 429 / 503
+      let retries = 3;
+      let delay = 1000;
+      let lastErrText = '';
+
+      while (retries >= 0) {
+        try {
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(payload),
+          });
+
+          if (resp.ok) {
+            const result = await resp.json();
+            totalUpdatedCells += result.totalUpdatedCells || chunk.length * (chunk[0]?.length || 1);
+            totalUpdatedRows += result.totalUpdatedRows || chunk.length;
+            break;
+          }
+
+          if (resp.status === 429 || resp.status === 503) {
+            retries--;
+            lastErrText = `HTTP ${resp.status} Quota/Service Limit`;
+            if (retries >= 0) {
+              await new Promise(res => setTimeout(res, delay));
+              delay *= 2;
+              continue;
+            }
+          }
+
+          lastErrText = await resp.text();
+          throw new Error(`Sheets values:batchUpdate failed for ${spreadsheetId}: ${lastErrText}`);
+        } catch (err: unknown) {
+          if (retries <= 0) throw err;
+          retries--;
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2;
+        }
+      }
+    }
+
     return {
-      updatedCells: result.totalUpdatedCells || values.length * (values[0]?.length || 1),
-      updatedRows: result.totalUpdatedRows || values.length,
+      updatedCells: totalUpdatedCells,
+      updatedRows: totalUpdatedRows,
     };
   }
 
@@ -437,10 +500,16 @@ export class SheetsEtlService {
    */
   async clearSheetRange(spreadsheetId: string, range: string): Promise<void> {
     const url = this.appendApiKey(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`);
-    await fetch(url, {
+    const resp = await fetch(url, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({}),
     });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Sheets clear failed for ${spreadsheetId} on ${range}: ${errText}`);
+    }
   }
 }
+

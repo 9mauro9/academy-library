@@ -20,6 +20,8 @@
     "verify-versioning": "NODE_PATH=./node_modules node test/verify_versioning.cjs",
     "verify-taxonomy": "NODE_PATH=./node_modules node test/verify_taxonomy.cjs",
     "verify-sync": "npx tsx test/verify_sync_engine.ts",
+    "verify-scenarios": "npx tsx test/verify_sync_scenarios.ts",
+    "verify-ai-sync": "npx tsx test/verify_ai_sync_engine.ts",
     "sync-docs": "NODE_PATH=./node_modules node scripts/sync-docs.cjs",
     "test:rules": "jest --testMatch '<rootDir>/test/firestore.rules.test.cjs' --forceExit --detectOpenHandles",
     "test": "npm run test:rules",
