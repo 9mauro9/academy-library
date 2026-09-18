@@ -25,6 +25,7 @@
 
 ### Bug Fixes
 
+* **sync:** resolve Data Ingestion freeze via batched writes (400 items/batch), enforce canonical curriculum hierarchy schema (`sub_track`, `lesson`, `topic`, `sorting`, `node_...`), and purge legacy/outdated documents from Firestore
 * add auto-reconnect logic to simulate_triggers Firestore listeners ([28741f7](https://github.com/9mauro9/academy-library/commit/28741f72b0ce6ec1a8845317254a7020ed535433))
 * add direct Cloud Firestore fallback data resolution for Academy Library CMS Portal ([9ac46af](https://github.com/9mauro9/academy-library/commit/9ac46aff0381912872ccee8956f042ad29edd67c))
 * change header brand subtitle to Personalized Learning Path Builder ([92f08ee](https://github.com/9mauro9/academy-library/commit/92f08ee0b07dea2b7251aedc5905866aaf1c8ae8))

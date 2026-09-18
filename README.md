@@ -34,6 +34,9 @@ Academy Library maintains a strict two-stage ETL architecture separating unstruc
 
 ### Stage 2: Master Ingestion & Firestore Synchronization
 - Pulls audited master sheets via Google Sheets API v4 (with client-side CSV export fallback) into `assets` and `curriculum_map` Firestore collections.
+- **High-Performance Batched Pipeline**: Uses Firestore batching (`db.batch()`, up to 400 operations per commit) to process 990+ assets and 800+ curriculum nodes in **under 5 seconds** with live telemetry.
+- **Canonical Schema Normalization**: Strictly maps hierarchy keys (`sub_track`, `lesson`, `topic`, `sub_topic_number`, `asset_name`) and numeric sorting trees (`sorting: { track_number, sub_track_number, lesson_number, topic_number, sub_topic_number }`) under deterministic document IDs (`node_${trackId}_${lesson}_${topic}_${subTopicNum}_${assetName}`).
+- **Zero-Duplicate Stale Record Purging**: Automatically purges malformed or legacy documents (such as `cm_*` keys) during synchronization to guarantee SSoT parity across downstream tools (such as Academy Timeliner).
 - **Ingestion Triggers**:
   - **Web UI**: Click **Stage 2: Ingest Masters into Firestore** on the Pre-Sync module or **⚡ Sync Database** on the Data Ingestion page.
   - **CLI**: `npm run sync-sheets`

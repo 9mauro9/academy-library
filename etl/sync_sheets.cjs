@@ -386,11 +386,16 @@ async function syncGoogleSheets() {
     }
 
     const curriculumData = {
+      doc_id: item.doc_id,
+      id: item.doc_id,
       track_id: item.track_id,
       track_name: item.track_name,
       sub_track: item.sub_track,
+      sub_track_name: item.sub_track,
       lesson: item.lesson,
+      lesson_name: item.lesson,
       topic: item.topic,
+      topic_name: item.topic,
       topic_description: item.topic_description,
       sub_topic_number: item.sub_topic_number,
       asset_name: item.asset_name,
@@ -413,7 +418,23 @@ async function syncGoogleSheets() {
   }
   log(`Committed ${parsedCurriculum.length} curriculum map nodes to Firestore.`);
 
-  // 6. Log Cache Invalidation Event
+  // 6. Clean up legacy malformed docs (cm_... and outdated nodes)
+  log('Cleaning up legacy and outdated documents in curriculum_map...');
+  const existingMapSnap = await curriculumCollection.get();
+  let deleteBatch = db.batch();
+  let deleteCount = 0;
+  existingMapSnap.forEach(doc => {
+    if (doc.id.startsWith('cm_') || doc.id === 'node_automation_cloudvision-fundamentals_change-control_1_lab-change-control') {
+      deleteBatch.delete(doc.ref);
+      deleteCount++;
+    }
+  });
+  if (deleteCount > 0) {
+    await deleteBatch.commit();
+    log(`Purged ${deleteCount} legacy/outdated documents from curriculum_map.`);
+  }
+
+  // 7. Log Cache Invalidation Event
   log('Logging cache invalidation stream event...');
   await db.collection('cache_invalidations').add({
     type: 'sheets_sync',

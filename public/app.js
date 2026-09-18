@@ -108,13 +108,120 @@ async function writeFirestoreDoc(collection, docId, data) {
   }
 }
 
-async function deleteFirestoreDoc(collection, docId) {
+// Bulk upsert documents using Firestore client SDK batch or REST batchWrite
+async function writeFirestoreBatchDocs(collection, items) {
+  if (!items || items.length === 0) return;
+  // If Firebase SDK client is available
+  if (typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length) {
+    try {
+      const db = firebase.firestore();
+      const BATCH_LIMIT = 400;
+      for (let i = 0; i < items.length; i += BATCH_LIMIT) {
+        const chunk = items.slice(i, i + BATCH_LIMIT);
+        const batch = db.batch();
+        for (const item of chunk) {
+          const docRef = db.collection(collection).doc(item.docId);
+          batch.set(docRef, item.data, { merge: true });
+        }
+        await batch.commit();
+      }
+      return;
+    } catch (sdkErr) {
+      console.warn('[Firestore SDK batch failed, falling back to REST batchWrite]:', sdkErr);
+    }
+  }
+
+  // Fallback: REST :batchWrite endpoint
   const token = await getAuthToken();
-  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-  const url = FIRESTORE_REST_BASE + '/' + collection + '/' + encodeURIComponent(docId);
-  const res = await fetch(url, { method: 'DELETE', headers });
-  if (!res.ok) throw new Error('Firestore delete failed: HTTP ' + res.status);
-  return true;
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const BATCH_LIMIT = 400;
+  for (let i = 0; i < items.length; i += BATCH_LIMIT) {
+    const chunk = items.slice(i, i + BATCH_LIMIT);
+    const writes = chunk.map(item => ({
+      update: {
+        name: `projects/academy-live-builder/databases/(default)/documents/${collection}/${encodeURIComponent(item.docId)}`,
+        fields: toFirestoreFields(item.data)
+      }
+    }));
+    const url = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents:batchWrite';
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ writes }) });
+    if (!res.ok) throw new Error(`Firestore batchWrite failed: HTTP ${res.status}`);
+  }
+}
+
+async function deleteFirestoreBatchDocs(collection, docIds) {
+  if (!docIds || docIds.length === 0) return;
+  if (typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length) {
+    try {
+      const db = firebase.firestore();
+      const BATCH_LIMIT = 400;
+      for (let i = 0; i < docIds.length; i += BATCH_LIMIT) {
+        const chunk = docIds.slice(i, i + BATCH_LIMIT);
+        const batch = db.batch();
+        for (const id of chunk) {
+          batch.delete(db.collection(collection).doc(id));
+        }
+        await batch.commit();
+      }
+      return;
+    } catch (sdkErr) {
+      console.warn('[Firestore SDK batch delete failed, falling back to REST]:', sdkErr);
+    }
+  }
+
+  const token = await getAuthToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const BATCH_LIMIT = 400;
+  for (let i = 0; i < docIds.length; i += BATCH_LIMIT) {
+    const chunk = docIds.slice(i, i + BATCH_LIMIT);
+    const writes = chunk.map(id => ({
+      delete: `projects/academy-live-builder/databases/(default)/documents/${collection}/${encodeURIComponent(id)}`
+    }));
+    const url = 'https://firestore.googleapis.com/v1/projects/academy-live-builder/databases/(default)/documents:batchWrite';
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ writes }) });
+    if (!res.ok) throw new Error(`Firestore batch delete failed: HTTP ${res.status}`);
+  }
+}
+
+function slugify(text) {
+  if (!text) return "";
+  return text.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[-\s]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function parseDurationSeconds(val) {
+  if (!val) return 0;
+  const str = String(val).trim();
+  if (!str) return 0;
+  const parts = str.split(':');
+  if (parts.length === 3) {
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    const s = parseInt(parts[2], 10) || 0;
+    return h * 3600 + m * 60 + s;
+  } else if (parts.length === 2) {
+    const m = parseInt(parts[0], 10) || 0;
+    const s = parseInt(parts[1], 10) || 0;
+    return m * 60 + s;
+  }
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : Math.round(num);
+}
+
+function inferTaxonomyFields(assetType, name) {
+  const type = (assetType || 'video').toLowerCase();
+  const domain = 'curriculum';
+  let category = 'videos';
+  if (type === 'lab' || type === 'document' || type === 'guide') category = 'documents';
+  else if (type === 'diagram') category = 'diagrams';
+  const slug = slugify(name || 'asset');
+  const ext = category === 'videos' ? '.mp4' : (category === 'diagrams' ? '.svg' : '.pdf');
+  return {
+    domain,
+    asset_category: category,
+    gcs_uri: `gs://academy-content-bucket/${domain}/${category}/${slug}${ext}`
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -339,7 +446,13 @@ class AcademyLibraryApp {
     const statCurriculum = document.getElementById('sync-stat-curriculum');
     const statOrphans   = document.getElementById('sync-stat-orphans');
 
-    const log = msg => { if (console_) console_.innerText += msg + '\n'; };
+    const log = msg => {
+      console.log(msg);
+      if (console_) {
+        console_.innerText += msg + '\n';
+        console_.scrollTop = console_.scrollHeight;
+      }
+    };
 
     if (btn) btn.disabled = true;
     if (btnIcon) btnIcon.innerText = '⏳';
@@ -350,7 +463,7 @@ class AcademyLibraryApp {
     if (console_) console_.innerText = '';
 
     try {
-      // Master source Google Sheet IDs (hardcoded per original CMS design)
+      // Master source Google Sheet IDs
       const ASSETS_SHEET_ID   = '1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww';
       const TRACKS_SHEET_ID   = '1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988';
       const assetsCsvUrl = `https://docs.google.com/spreadsheets/d/${ASSETS_SHEET_ID}/export?format=csv`;
@@ -368,69 +481,233 @@ class AcademyLibraryApp {
       const assetsRows = parseCsvRows(assetsText);
       const tracksRows = parseCsvRows(tracksText);
 
-      const assetsHeaders = assetsRows[0] || [];
-      const tracksHeaders = tracksRows[0] || [];
+      const assetsHeaders = (assetsRows[0] || []).map(h => h.trim().toLowerCase().replace(/[\s-]/g, '_'));
+      const tracksHeaders = (tracksRows[0] || []).map(h => h.trim().toLowerCase().replace(/[\s-]/g, '_'));
 
       const assetDataRows = assetsRows.slice(1);
       const trackDataRows = tracksRows.slice(1);
 
-      log(`[SYNC] Parsed ${assetDataRows.length} assets, ${trackDataRows.length} curriculum rows.`);
-      log('[SYNC] Writing to Firestore...');
+      log(`[SYNC] Parsed ${assetDataRows.length} assets and ${trackDataRows.length} curriculum rows.`);
 
-      if (statusTxt) statusTxt.innerText = 'Status: Writing assets to Firestore...';
-
-      // Write assets to Firestore
-      let assetsWritten = 0;
-      for (const row of assetDataRows) {
-        if (row.length < 2) continue;
-        const record = {};
-        assetsHeaders.forEach((h, i) => { if (h && row[i] !== undefined) record[h] = row[i]; });
-        // Use a stable doc ID from the asset name or first column
-        const docId = (record.asset_id || record.id || record.name || assetsHeaders[0] && record[assetsHeaders[0]] || '')
-          .toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 80) || `asset_${assetsWritten}`;
-        try {
-          await writeFirestoreDoc('assets', docId, record);
-          assetsWritten++;
-        } catch (e) {
-          log(`[WARN] Could not write asset row ${assetsWritten}: ${e.message}`);
+      // 1. Prepare Assets
+      const findAssetIdx = (keys) => {
+        for (const k of keys) {
+          const idx = assetsHeaders.indexOf(k);
+          if (idx !== -1) return idx;
         }
+        return -1;
+      };
+
+      const aNameIdx = findAssetIdx(['asset_name', 'name', 'title']);
+      const aTypeIdx = findAssetIdx(['asset_type', 'type']);
+      const aDurIdx = findAssetIdx(['duration']);
+      const aDiffIdx = findAssetIdx(['difficulty_level', 'difficulty']);
+      const aTagIdx = findAssetIdx(['skill_tag', 'skill_tags', 'tags']);
+      const aLastUpdIdx = findAssetIdx(['last_updated', 'date']);
+      const aCvpIdx = findAssetIdx(['cvp_cv_cue_version', 'cvp_cv-cue_version', 'cvp_version', 'cvp']);
+      const aEosIdx = findAssetIdx(['eos_version', 'eos']);
+      const aAvdIdx = findAssetIdx(['avd_version', 'avd']);
+      const aDevIdx = findAssetIdx(['developer', 'author']);
+      const aNeedsUpdIdx = findAssetIdx(['needs_update']);
+      const aCommentsIdx = findAssetIdx(['comments', 'notes']);
+
+      const assetsList = [];
+      const assetsByName = new Map();
+
+      for (let i = 0; i < assetDataRows.length; i++) {
+        const r = assetDataRows[i];
+        if (!r || r.length < 2) continue;
+        const name = (aNameIdx !== -1 && r[aNameIdx] ? String(r[aNameIdx]).trim() : '') || (r[0] ? String(r[0]).trim() : '');
+        if (!name) continue;
+
+        const assetId = slugify(name) || `asset_${i}`;
+        const assetType = (aTypeIdx !== -1 && r[aTypeIdx]) ? String(r[aTypeIdx]).trim().toLowerCase() : 'video';
+        const durSec = aDurIdx !== -1 ? parseDurationSeconds(r[aDurIdx]) : 0;
+        const diffVal = aDiffIdx !== -1 && r[aDiffIdx] ? parseFloat(r[aDiffIdx]) : null;
+        const tags = aTagIdx !== -1 && r[aTagIdx] ? String(r[aTagIdx]).split(',').map(s => s.trim()).filter(Boolean) : [];
+        const lastUpdated = (aLastUpdIdx !== -1 && r[aLastUpdIdx]) ? String(r[aLastUpdIdx]).trim() : new Date().toISOString().split('T')[0];
+        const cvpVer = (aCvpIdx !== -1 && r[aCvpIdx]) ? String(r[aCvpIdx]).trim() : '';
+        const eosVer = (aEosIdx !== -1 && r[aEosIdx]) ? String(r[aEosIdx]).trim() : '';
+        const avdVer = (aAvdIdx !== -1 && r[aAvdIdx]) ? String(r[aAvdIdx]).trim() : '';
+        const dev = (aDevIdx !== -1 && r[aDevIdx]) ? String(r[aDevIdx]).trim() : '';
+        const needsUpd = aNeedsUpdIdx !== -1 && ['yes', 'true', '1'].includes(String(r[aNeedsUpdIdx]).toLowerCase().trim());
+        const comments = (aCommentsIdx !== -1 && r[aCommentsIdx]) ? String(r[aCommentsIdx]).trim() : '';
+
+        const taxonomy = inferTaxonomyFields(assetType, name);
+
+        const assetDoc = {
+          asset_id: assetId,
+          name: name,
+          current_title: name,
+          title_aliases: [],
+          type: assetType,
+          domain: taxonomy.domain,
+          asset_category: taxonomy.asset_category,
+          gcs_uri: taxonomy.gcs_uri,
+          content_hash: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          major_version: 1,
+          minor_version: 0,
+          version: 1,
+          status: 'ACTIVE',
+          is_latest: true,
+          developer: dev,
+          attributes: {
+            duration: durSec,
+            prerequisite: null,
+            difficulty_level: isNaN(diffVal) ? null : diffVal,
+            skill_tags: tags,
+            last_updated: lastUpdated,
+            cvp_version: cvpVer,
+            eos_version: eosVer,
+            avd_version: avdVer,
+            needs_update: needsUpd,
+            comments: comments,
+            topic: null
+          }
+        };
+
+        assetsList.push({ docId: assetId, data: assetDoc });
+        assetsByName.set(name.toLowerCase(), assetId);
       }
 
-      if (statusTxt) statusTxt.innerText = 'Status: Writing curriculum map to Firestore...';
-
-      // Write curriculum rows to Firestore
-      let curriculumWritten = 0;
-      for (const row of trackDataRows) {
-        if (row.length < 2) continue;
-        const record = {};
-        tracksHeaders.forEach((h, i) => { if (h && row[i] !== undefined) record[h] = row[i]; });
-        const docId = (record.curriculum_id || record.id || `cm_${curriculumWritten}`);
-        try {
-          await writeFirestoreDoc('curriculum_map', docId, record);
-          curriculumWritten++;
-        } catch (e) {
-          log(`[WARN] Could not write curriculum row ${curriculumWritten}: ${e.message}`);
+      // 2. Prepare Curriculum Map Nodes
+      const findTrackIdx = (keys) => {
+        for (const k of keys) {
+          const idx = tracksHeaders.indexOf(k);
+          if (idx !== -1) return idx;
         }
+        return -1;
+      };
+
+      const tNumIdx = findTrackIdx(['track_number']);
+      const tNameIdx = findTrackIdx(['track_name', 'track']);
+      const stNumIdx = findTrackIdx(['sub_track_number']);
+      const stNameIdx = findTrackIdx(['sub_track_name', 'sub_track']);
+      const lNumIdx = findTrackIdx(['lesson_number']);
+      const lNameIdx = findTrackIdx(['lesson_name', 'lesson']);
+      const topNumIdx = findTrackIdx(['topic_number']);
+      const topNameIdx = findTrackIdx(['topic_name', 'topic']);
+      const topDescIdx = findTrackIdx(['topic_description', 'description']);
+      const subTopNumIdx = findTrackIdx(['sub_topic_number']);
+      const assetNameIdx = findTrackIdx(['asset_name', 'sub_topic_name', 'sub_topic', 'title']);
+
+      const parseNum = (val) => {
+        if (val === null || val === undefined || val === '') return null;
+        const n = parseFloat(val);
+        return isNaN(n) ? null : n;
+      };
+
+      const curriculumList = [];
+      let orphanedCount = 0;
+
+      for (let i = 0; i < trackDataRows.length; i++) {
+        const r = trackDataRows[i];
+        if (!r || r.length < 2) continue;
+
+        const trackName = (tNameIdx !== -1 && r[tNameIdx] ? String(r[tNameIdx]).trim() : '') || 'General Track';
+        const subTrackName = (stNameIdx !== -1 && r[stNameIdx] ? String(r[stNameIdx]).trim() : '') || 'General';
+        const lessonName = (lNameIdx !== -1 && r[lNameIdx] ? String(r[lNameIdx]).trim() : '') || 'General Lesson';
+        const topicName = (topNameIdx !== -1 && r[topNameIdx] ? String(r[topNameIdx]).trim() : '') || 'General Topic';
+        const topicDesc = (topDescIdx !== -1 && r[topDescIdx]) ? String(r[topDescIdx]).trim() : '';
+        const subTopicNum = subTopNumIdx !== -1 ? parseNum(r[subTopNumIdx]) : (i + 1);
+
+        let assetName = assetNameIdx !== -1 && r[assetNameIdx] ? String(r[assetNameIdx]).trim() : '';
+        if (!assetName) continue;
+
+        const assetRefId = assetsByName.get(assetName.toLowerCase()) || null;
+        if (!assetRefId) {
+          orphanedCount++;
+        }
+
+        const trackId = slugify(trackName);
+        const docId = `node_${trackId}_${slugify(lessonName)}_${slugify(topicName)}_${subTopicNum || 1}_${slugify(assetName)}`;
+
+        const sorting = {
+          track_number: tNumIdx !== -1 ? parseNum(r[tNumIdx]) : null,
+          sub_track_number: stNumIdx !== -1 ? parseNum(r[stNumIdx]) : null,
+          lesson_number: lNumIdx !== -1 ? parseNum(r[lNumIdx]) : null,
+          topic_number: topNumIdx !== -1 ? parseNum(r[topNumIdx]) : null,
+          sub_topic_number: subTopicNum
+        };
+
+        const curriculumDoc = {
+          doc_id: docId,
+          id: docId,
+          track_id: trackId,
+          track_name: trackName,
+          sub_track: subTrackName,
+          sub_track_name: subTrackName,
+          lesson: lessonName,
+          lesson_name: lessonName,
+          topic: topicName,
+          topic_name: topicName,
+          topic_description: topicDesc,
+          sub_topic_number: subTopicNum,
+          asset_name: assetName,
+          asset_ref_id: assetRefId,
+          version: 1,
+          is_latest: true,
+          sorting: sorting
+        };
+
+        curriculumList.push({ docId, data: curriculumDoc });
       }
 
-      // Write a sync checkpoint to cms_history
+      // 3. Batched Asset Upsert
+      if (statusTxt) statusTxt.innerText = 'Status: Writing assets to Firestore in batches...';
+      const BATCH_SIZE = 400;
+      const assetBatches = Math.ceil(assetsList.length / BATCH_SIZE);
+      for (let b = 0; b < assetBatches; b++) {
+        const chunk = assetsList.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        log(`[SYNC] Writing assets: batch ${b + 1} of ${assetBatches} (${chunk.length} items)...`);
+        await writeFirestoreBatchDocs('assets', chunk);
+      }
+      log(`[SUCCESS] Committed ${assetsList.length} assets to Firestore.`);
+
+      // 4. Batched Curriculum Upsert
+      if (statusTxt) statusTxt.innerText = 'Status: Writing curriculum map to Firestore in batches...';
+      const curriculumBatches = Math.ceil(curriculumList.length / BATCH_SIZE);
+      for (let b = 0; b < curriculumBatches; b++) {
+        const chunk = curriculumList.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        log(`[SYNC] Writing curriculum: batch ${b + 1} of ${curriculumBatches} (${chunk.length} nodes)...`);
+        await writeFirestoreBatchDocs('curriculum_map', chunk);
+      }
+      log(`[SUCCESS] Committed ${curriculumList.length} curriculum map nodes to Firestore.`);
+
+      // 5. Clean up old malformed cm_... and outdated documents from curriculum_map
+      log('[SYNC] Cleaning up legacy malformed documents from curriculum_map...');
+      try {
+        const existingDocs = await fetchFirestoreRest('curriculum_map', 2500);
+        const cmIdsToDelete = existingDocs
+          .filter(d => d.id && (d.id.startsWith('cm_') || d.id === 'node_automation_cloudvision-fundamentals_change-control_1_lab-change-control'))
+          .map(d => d.id);
+        if (cmIdsToDelete.length > 0) {
+          log(`[SYNC] Purging ${cmIdsToDelete.length} legacy / outdated documents...`);
+          await deleteFirestoreBatchDocs('curriculum_map', cmIdsToDelete);
+          log(`[SUCCESS] Purged ${cmIdsToDelete.length} legacy documents.`);
+        }
+      } catch (cleanErr) {
+        console.warn('Non-fatal cleanup warning:', cleanErr);
+      }
+
+      // 6. Record Checkpoint
       const checkpointId = 'sync_' + Date.now();
       try {
         await writeFirestoreDoc('cms_history', checkpointId, {
           commit_id: checkpointId,
-          description: 'Google Sheets Sync — ' + new Date().toISOString(),
-          author: firebase.auth().currentUser?.displayName || firebase.auth().currentUser?.email || 'CMS Operator',
+          description: 'Automated Google Sheets Sync — ' + new Date().toISOString(),
+          author: (typeof firebase !== 'undefined' && firebase.auth()?.currentUser?.email) || 'CMS Operator',
           timestamp: new Date().toISOString(),
-          assets_count: assetsWritten,
-          curriculum_count: curriculumWritten
+          assets_count: assetsList.length,
+          curriculum_count: curriculumList.length,
+          orphaned_count: orphanedCount
         });
       } catch (e) { /* non-fatal */ }
 
-      log(`[SUCCESS] Upserted ${assetsWritten} assets and ${curriculumWritten} curriculum nodes.`);
-
-      if (statAssets) statAssets.innerText = assetsWritten;
-      if (statCurriculum) statCurriculum.innerText = curriculumWritten;
-      if (statOrphans) statOrphans.innerText = 0;
+      // 7. Update UI Stats
+      if (statAssets) statAssets.innerText = assetsList.length;
+      if (statCurriculum) statCurriculum.innerText = curriculumList.length;
+      if (statOrphans) statOrphans.innerText = orphanedCount;
 
       if (statusDot) statusDot.style.background = '#10b981';
       if (statusTxt) statusTxt.innerText = 'Status: Sync Complete — data live in Firestore!';
