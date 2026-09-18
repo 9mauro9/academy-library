@@ -16,7 +16,7 @@ This document outlines the visual system architecture, processing flows, caching
 ```mermaid
 graph TD
     subgraph "Stage 1: Reference Source & Pre-Sync ETL (R.A.E.S. v3)"
-        TRACK["Source: Academy Tracking (Google Drive)"]
+        TRACK["Source: Academy Tracking (ID: 17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY)"]
         
         subgraph "Multi-Agent Audit & Reconciliation Protocol"
             A1["Agent 1: Agent-Tracking (Gemini API & Semantic Layout Extractor)"]

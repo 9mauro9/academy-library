@@ -21,7 +21,7 @@ Academy Library serves as the central administration portal for managing curricu
 Academy Library maintains a strict two-stage ETL architecture separating unstructured human reference data from production Firestore collections:
 
 ### Stage 1: Master Sheet Synchronization Engine (Pre-Sync Sheet ETL — R.A.E.S. Version 3)
-- **Source**: `Academy Tracking` (Google Drive human-maintained reference sheets with track tabs like `Automation Fundamentals`, `DC Track`, `Campus Track`, `AI Track`).
+- **Source**: `Academy Tracking`: [Google Sheet](https://docs.google.com/spreadsheets/d/17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY/edit?usp=sharing) (ID: `17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY`, human-maintained reference sheets with track tabs like `Automation Fundamentals`, `DC Track`, `Campus Track`, `AI Track`).
 - **Target Masters (Google Drive)**:
   1. **Academy Master Assets**: [Google Sheet](https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing) (`asset_name` primary key, ISO 8601 duration `PT##H##M##S`, version tags, metadata).
   2. **Academy Master Learning Paths**: [Google Sheet](https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing) (`asset_name` foreign key, 5-tier curriculum hierarchy).

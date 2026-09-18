@@ -46,7 +46,7 @@ import { SheetsEtlService } from '../../services/sheetsEtlService';
 import { SheetsBatchWriter } from '../../services/sheetsBatchWriter';
 import { reconcileWithMultiAgents } from '../../services/hierarchyReconciler';
 
-const DEFAULT_TRACKING_SHEET_ID = '10oJp1jY5_Tracking_Source_AcademyTracking';
+const DEFAULT_TRACKING_SHEET_ID = '17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY';
 const DEFAULT_MASTER_ASSETS_ID = '1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww';
 const DEFAULT_MASTER_LEARNING_PATHS_ID = '1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988';
 
