@@ -16,34 +16,20 @@ Academy Library serves as the central administration portal for managing curricu
 
 ---
 
-## Two-Stage Curriculum Synchronization Pipeline
+## Data Ingestion & Automated Google Sheets Sync
+Data is pulled directly via Google Sheets API v4 (or client-side CSV export) from two master sources:
 
-Academy Library maintains a strict two-stage ETL architecture separating unstructured human reference data from production Firestore collections:
+1. **Academy Master Assets**: [https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing)
+2. **Academy Master Learning Paths**: [https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing)
 
-### Stage 1: Master Sheet Synchronization Engine (Pre-Sync Sheet ETL — R.A.E.S. Version 3)
-- **Source**: `Academy Tracking`: [Google Sheet](https://docs.google.com/spreadsheets/d/17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY/edit?usp=sharing) (ID: `17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY`, human-maintained reference sheets with track tabs like `Automation Fundamentals`, `DC Track`, `Campus Track`, `AI Track`).
-- **Target Masters (Google Drive)**:
-  1. **Academy Master Assets**: [Google Sheet](https://docs.google.com/spreadsheets/d/1f8mZwHXNlQbfnyZky2lxtjFAshXHMtsiK0gtgOLfSww/edit?usp=sharing) (`asset_name` primary key, ISO 8601 duration `PT##H##M##S`, version tags, metadata).
-  2. **Academy Master Learning Paths**: [Google Sheet](https://docs.google.com/spreadsheets/d/1yRBjdg8Kjy5RVgmPvafkFmkSSFKA3EvmRmV1NWNw988/edit?usp=sharing) (`asset_name` foreign key, 5-tier curriculum hierarchy).
-- **Core Capabilities (R.A.E.S. v3)**:
-  - **4-Agent Audit Protocol**: `Agent-Tracking` (Gemini API & semantic layout extractor), `Agent-MasterAssets` (catalog auditor), `Agent-MasterPaths` (hierarchy auditor), and `Agent-Arbiter` (reconciliation & diff engine).
-  - **Zero-Dropped Sub-Topics Guarantee**: Eliminates layout truncation blind spots, preserving consecutive sub-topics across merged cells and row shifts (specifically resolving `Automation Fundamentals` $\to$ `Lesson 5` $\to$ `Topic 1` $\to$ `Sub Topic 3: CloudVision and Device Communication`).
-  - **Sequential Sub-Topic Re-indexing Algorithm**: Ensures strictly consecutive sub-topic numbering ($1, 2, 3, \dots$) within each topic.
-  - **Bounded Schema Updates**: Writes exclusively to columns `A1:L` (Assets) and `A1:K` (Paths), protecting formulas and notes in columns `M:Z`.
-  - **Google Drive Pre-Write Snapshot Routine**: Automatically generates timestamped backups in Google Drive prior to batch mutations.
-  - **R.A.E.S. Version 3 UI**: Interactive state inversion for pill navigation, semantic status badges (`ADD (NEW)` emerald, `UPDATE` amber, `DEPRECATED` rose), live agent diagnostic cards, and benchmark verification preview.
-
-### Stage 2: Master Ingestion & Firestore Synchronization
-- Pulls audited master sheets via Google Sheets API v4 (with client-side CSV export fallback) into `assets` and `curriculum_map` Firestore collections.
-- **High-Performance Batched Pipeline**: Uses Firestore batching (`db.batch()`, up to 400 operations per commit) to process 990+ assets and 800+ curriculum nodes in **under 5 seconds** with live telemetry.
+### Capabilities:
+- **High-Performance Batched Pipeline**: Uses Firestore batching (`db.batch()`, up to 400 operations per commit) to process 990+ assets and 800+ curriculum nodes in under 5 seconds with live telemetry.
 - **Canonical Schema Normalization**: Strictly maps hierarchy keys (`sub_track`, `lesson`, `topic`, `sub_topic_number`, `asset_name`) and numeric sorting trees (`sorting: { track_number, sub_track_number, lesson_number, topic_number, sub_topic_number }`) under deterministic document IDs (`node_${trackId}_${lesson}_${topic}_${subTopicNum}_${assetName}`).
-- **Zero-Duplicate Stale Record Purging**: Automatically purges malformed or legacy documents (such as `cm_*` keys) during synchronization to guarantee SSoT parity across downstream tools (such as Academy Timeliner).
-- **Ingestion Triggers & Verification**:
-  - **Web UI**: Click **Stage 2: Ingest Masters into Firestore** on the Pre-Sync module or **⚡ Sync Database** on the Data Ingestion page.
-  - **CLI**: `npm run sync-sheets`
-  - **AI Sync Verification**: `npm run verify-ai-sync`
-  - **Pre-Sync Verification**: `npm run verify-sync`
-  - **Scenario Audit**: `npm run verify-scenarios`
+- **Zero-Duplicate Stale Record Purging**: Automatically purges malformed or legacy documents (such as `cm_*` keys) during synchronization to guarantee SSoT parity across downstream tools.
+
+### Ingestion Triggers:
+- **Web UI**: Click **⚡ Sync Database** on the **Data Ingestion** page.
+- **CLI**: `npm run sync-sheets`
 
 ---
 

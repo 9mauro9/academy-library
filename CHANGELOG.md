@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 (2026-09-19)
+
+### Removed
+* **sync:** remove Master Sheet Synchronization Engine (Stage 1 Pre-Sync ETL) module, services (`aiTrackingExtractor`, `diffService`, `hierarchyReconciler`, `sheetsBatchWriter`, `sheetsEtlService`, `trackingParser`), types, and test suites
+* **ui:** remove Pre-Sync views, metric cards, diff tables, and sidebar navigation tab from CMS Portal and React DataManager
+* **note:** Cloud Firestore Data Ingestion pipeline (`sync_sheets.cjs` / `POST /api/sync-sheets`) and client-side direct Google Sheets ingestion remain fully operational
+
 ## 1.1.0 (2026-09-18)
 
 ### Features
