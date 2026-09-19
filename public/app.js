@@ -981,6 +981,73 @@ class AcademyLibraryApp {
     }).join('');
   }
 
+  // -----------------------------------------------------------------------
+  // Duration formatting & Assets preloading
+  // -----------------------------------------------------------------------
+  formatDuration(seconds) {
+    if (seconds == null || isNaN(seconds) || seconds <= 0) return '';
+    const s = Math.round(Number(seconds));
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    if (hrs > 0) {
+      return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  }
+
+  async ensureAssetsLoaded() {
+    if (this.assets && this.assets.length > 0) return this.assets;
+    try {
+      const docs = await fetchFirestoreRest('assets', 2500);
+      this.assets = docs.map(d => ({
+        asset_id: d.id,
+        name: d.name || d.id,
+        type: d.type || 'video',
+        version: d.version,
+        attributes: d.attributes || {}
+      }));
+      return this.assets;
+    } catch (e) {
+      console.warn('[Tracks] Could not preload assets for durations:', e);
+      return [];
+    }
+  }
+
+  toggleTreeNode(headerEl, event) {
+    if (event) event.stopPropagation();
+    const parentLi = headerEl.closest('.tree-item');
+    if (!parentLi) return;
+    const childUl = parentLi.querySelector(':scope > ul');
+    const arrow = headerEl.querySelector('.toggle-arrow');
+    if (!childUl) return;
+
+    const isCollapsed = childUl.classList.toggle('collapsed');
+    if (arrow) arrow.classList.toggle('collapsed', isCollapsed);
+  }
+
+  expandAllTreeNodes() {
+    const treeContent = document.getElementById('tree-content');
+    if (!treeContent) return;
+    treeContent.querySelectorAll('.tree-item > ul').forEach(ul => {
+      ul.classList.remove('collapsed');
+    });
+    treeContent.querySelectorAll('.toggle-arrow').forEach(arrow => {
+      arrow.classList.remove('collapsed');
+    });
+  }
+
+  collapseAllTreeNodes() {
+    const treeContent = document.getElementById('tree-content');
+    if (!treeContent) return;
+    treeContent.querySelectorAll('.tree-item > ul').forEach(ul => {
+      ul.classList.add('collapsed');
+    });
+    treeContent.querySelectorAll('.toggle-arrow:not(.empty)').forEach(arrow => {
+      arrow.classList.add('collapsed');
+    });
+  }
+
   async selectTrack(trackId, trackName) {
     this.selectedTrackId = trackId;
     document.querySelectorAll('.track-select-btn').forEach(btn => {
@@ -989,81 +1056,163 @@ class AcademyLibraryApp {
 
     const treeTitle = document.getElementById('tree-title');
     if (treeTitle) treeTitle.innerText = trackName;
+    const treeBadge = document.getElementById('tree-badge');
+    if (treeBadge) treeBadge.innerText = 'latest';
+    const treeActions = document.getElementById('tree-actions');
+    if (treeActions) treeActions.style.display = 'flex';
+
     const treeContent = document.getElementById('tree-content');
     if (!treeContent) return;
 
     treeContent.innerHTML = '<div class="loading-placeholder">Loading curriculum map...</div>';
 
     try {
-      const docs = await fetchFirestoreRest('curriculum_map', 2000);
-      const trackDocs = docs.filter(d => d.track_id === trackId || d.track_name === trackName);
+      const [docs] = await Promise.all([
+        fetchFirestoreRest('curriculum_map', 2500),
+        this.ensureAssetsLoaded()
+      ]);
 
-      const subTrackMap = new Map();
-      trackDocs.forEach(d => {
-        const stName = d.sub_track || 'General Sub-Track';
-        const stNum  = d.sub_track_number || d.sorting?.sub_track_number || null;
-        if (!subTrackMap.has(stName)) subTrackMap.set(stName, { sub_track_name: stName, sub_track_number: stNum, lessons: new Map() });
-        const st = subTrackMap.get(stName);
-        if (!st.sub_track_number && stNum) st.sub_track_number = stNum;
-
-        const lName = d.lesson || 'General Lesson';
-        const lNum  = d.lesson_number || d.sorting?.lesson_number || null;
-        if (!st.lessons.has(lName)) st.lessons.set(lName, { lesson_name: lName, lesson_number: lNum, topics: new Map() });
-        const les = st.lessons.get(lName);
-        if (!les.lesson_number && lNum) les.lesson_number = lNum;
-
-        const topName = d.topic || 'General Topic';
-        const topNum  = d.topic_number || d.sorting?.topic_number || null;
-        if (!les.topics.has(topName)) {
-          les.topics.set(topName, {
-            topic_name: topName,
-            topic_number: topNum,
-            topic_description: d.topic_description || null,
-            sub_topics: []
-          });
-        }
-        const top = les.topics.get(topName);
-        if (!top.topic_number && topNum) top.topic_number = topNum;
-        if (d.sub_topic) top.sub_topics.push(d.sub_topic);
-      });
-
-      const sortByNum = (a, b, key) => {
-        const nA = parseFloat(a[key]) || 999;
-        const nB = parseFloat(b[key]) || 999;
-        return nA - nB;
-      };
-
-      const subTracks = Array.from(subTrackMap.values()).sort((a, b) => sortByNum(a, b, 'sub_track_number'));
+      const trackDocs = docs.filter(d => 
+        (d.track_id && d.track_id.toLowerCase() === trackId.toLowerCase()) || 
+        (d.track_name && d.track_name.toLowerCase() === trackName.toLowerCase()) ||
+        (d.track && d.track.toLowerCase() === trackName.toLowerCase())
+      );
 
       if (trackDocs.length === 0) {
         treeContent.innerHTML = '<div class="loading-placeholder">No curriculum content found for this track.</div>';
         return;
       }
 
-      treeContent.innerHTML = subTracks.map(st => {
+      // Build asset duration lookup maps
+      const assetMapById = new Map();
+      const assetMapByName = new Map();
+      (this.assets || []).forEach(a => {
+        if (a.asset_id) assetMapById.set(a.asset_id, a);
+        if (a.name) assetMapByName.set(a.name.toLowerCase().trim(), a);
+      });
+
+      // Group into 4-tier hierarchy: SubTrack -> Lesson -> Topic -> Leaf Asset
+      const subTrackMap = new Map();
+
+      trackDocs.forEach(d => {
+        const stName = d.sub_track_name || d.sub_track || 'General Sub-Track';
+        const stNum  = d.sorting?.sub_track_number ?? d.sub_track_number ?? null;
+        if (!subTrackMap.has(stName)) {
+          subTrackMap.set(stName, {
+            sub_track_name: stName,
+            sub_track_number: stNum,
+            lessons: new Map()
+          });
+        }
+        const st = subTrackMap.get(stName);
+        if (st.sub_track_number == null && stNum != null) st.sub_track_number = stNum;
+
+        const lName = d.lesson_name || d.lesson || 'General Lesson';
+        const lNum  = d.sorting?.lesson_number ?? d.lesson_number ?? null;
+        if (!st.lessons.has(lName)) {
+          st.lessons.set(lName, {
+            lesson_name: lName,
+            lesson_number: lNum,
+            topics: new Map()
+          });
+        }
+        const les = st.lessons.get(lName);
+        if (les.lesson_number == null && lNum != null) les.lesson_number = lNum;
+
+        const topName = d.topic_name || d.topic || 'General Topic';
+        const topNum  = d.sorting?.topic_number ?? d.topic_number ?? null;
+        if (!les.topics.has(topName)) {
+          les.topics.set(topName, {
+            topic_name: topName,
+            topic_number: topNum,
+            topic_description: d.topic_description || null,
+            assets: []
+          });
+        }
+        const top = les.topics.get(topName);
+        if (top.topic_number == null && topNum != null) top.topic_number = topNum;
+        if (!top.topic_description && d.topic_description) top.topic_description = d.topic_description;
+
+        // Leaf asset node
+        const assetName = d.asset_name || d.sub_topic;
+        if (assetName) {
+          let durationSec = null;
+          if (d.asset_ref_id && assetMapById.has(d.asset_ref_id)) {
+            durationSec = assetMapById.get(d.asset_ref_id)?.attributes?.duration;
+          } else if (assetMapByName.has(assetName.toLowerCase().trim())) {
+            durationSec = assetMapByName.get(assetName.toLowerCase().trim())?.attributes?.duration;
+          }
+          if (durationSec == null && d.attributes?.duration) durationSec = d.attributes.duration;
+          if (durationSec == null && d.duration) durationSec = d.duration;
+
+          const durationFormatted = this.formatDuration(durationSec);
+          const subTopNum = d.sorting?.sub_topic_number ?? d.sub_topic_number ?? null;
+
+          top.assets.push({
+            asset_name: assetName,
+            asset_ref_id: d.asset_ref_id || null,
+            sub_topic_number: subTopNum,
+            durationSec: durationSec,
+            durationFormatted: durationFormatted
+          });
+        }
+      });
+
+      const sortByNum = (a, b, key) => {
+        const nA = a[key] != null && !isNaN(a[key]) ? parseFloat(a[key]) : 9999;
+        const nB = b[key] != null && !isNaN(b[key]) ? parseFloat(b[key]) : 9999;
+        return nA - nB;
+      };
+
+      const chevronSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+
+      const subTracks = Array.from(subTrackMap.values()).sort((a, b) => sortByNum(a, b, 'sub_track_number'));
+
+      const html = `<ul class="tree-list">` + subTracks.map(st => {
         const lessons = Array.from(st.lessons.values()).sort((a, b) => sortByNum(a, b, 'lesson_number'));
         const lessonsHtml = lessons.map(les => {
           const topics = Array.from(les.topics.values()).sort((a, b) => sortByNum(a, b, 'topic_number'));
           const topicsHtml = topics.map(top => {
-            const subTopicsHtml = top.sub_topics.length
-              ? top.sub_topics.map(st => `<li class="sub-topic-item">◦ ${st}</li>`).join('')
-              : '';
-            return `<div class="topic-item">` +
-              `<div class="topic-header"><span class="topic-name">📌 ${top.topic_name}</span>` +
-              (top.topic_description ? `<span class="topic-desc">${top.topic_description}</span>` : '') +
+            const sortedAssets = top.assets.sort((a, b) => sortByNum(a, b, 'sub_topic_number'));
+            const assetsHtml = sortedAssets.map(ast => {
+              return `<li class="tree-item asset">` +
+                `<div class="item-header">` +
+                  `<span class="toggle-arrow empty"></span>` +
+                  `<span class="node-label">${ast.asset_name}</span>` +
+                  (ast.durationFormatted ? `<span class="node-duration">${ast.durationFormatted}</span>` : '') +
+                `</div>` +
+              `</li>`;
+            }).join('');
+
+            return `<li class="tree-item topic">` +
+              `<div class="item-header" onclick="app.toggleTreeNode(this, event)">` +
+                `<span class="toggle-arrow">${chevronSvg}</span>` +
+                `<span class="node-label">${top.topic_name}</span>` +
               `</div>` +
-              (subTopicsHtml ? `<ul class="sub-topics-list">${subTopicsHtml}</ul>` : '') +
-              `</div>`;
+              (top.topic_description ? `<div class="topic-desc">${top.topic_description}</div>` : '') +
+              (assetsHtml ? `<ul>${assetsHtml}</ul>` : '') +
+            `</li>`;
           }).join('');
-          return `<div class="lesson-item">` +
-            `<div class="lesson-header">📖 ${les.lesson_name}</div>` +
-            `<div class="topics-container">${topicsHtml}</div></div>`;
+
+          return `<li class="tree-item lesson">` +
+            `<div class="item-header" onclick="app.toggleTreeNode(this, event)">` +
+              `<span class="toggle-arrow">${chevronSvg}</span>` +
+              `<span class="node-label">${les.lesson_name}</span>` +
+            `</div>` +
+            `<ul>${topicsHtml}</ul>` +
+          `</li>`;
         }).join('');
 
-        return `<div class="sub-track-section">` +
-          `<div class="sub-track-header">🗂️ ${st.sub_track_name}</div>` +
-          `<div class="lessons-container">${lessonsHtml}</div></div>`;
-      }).join('');
+        return `<li class="tree-item subTrack">` +
+          `<div class="item-header" onclick="app.toggleTreeNode(this, event)">` +
+            `<span class="toggle-arrow">${chevronSvg}</span>` +
+            `<span class="node-label">${st.sub_track_name}</span>` +
+          `</div>` +
+          `<ul>${lessonsHtml}</ul>` +
+        `</li>`;
+      }).join('') + `</ul>`;
+
+      treeContent.innerHTML = html;
 
     } catch (err) {
       console.error('[Tracks] selectTrack error:', err);

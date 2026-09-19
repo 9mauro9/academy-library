@@ -761,71 +761,174 @@ body {
   text-align: center;
 }
 
-/* Dynamic Tree elements */
-.tree-node {
-  margin-bottom: 10px;
-}
-
-.tree-label {
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 8px;
-  background-color: rgba(255, 255, 255, 0.02);
+/* Dynamic Tree elements & Timeliner-compatible hierarchy */
+.tree-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 4px 10px;
   border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  user-select: none;
-}
-
-.tree-label::before {
-  content: '▼';
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  transition: transform 0.2s ease;
-}
-
-.tree-label.collapsed::before {
-  transform: rotate(-90deg);
-}
-
-.tree-children {
-  margin-left: 20px;
-  border-left: 1px dashed rgba(255, 255, 255, 0.1);
-  padding-left: 12px;
-  margin-top: 6px;
-}
-
-.tree-children.hidden {
-  display: none;
-}
-
-.tree-asset-node {
-  padding: 8px 12px;
-  margin: 4px 0;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 4px;
   transition: var(--transition-fast);
 }
 
-.tree-asset-node:hover {
-  background-color: rgba(255, 255, 255, 0.03);
-  border-color: rgba(0, 242, 254, 0.1);
+.tree-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: var(--text-accent);
 }
 
-.tree-asset-name {
+.tree-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.tree-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.2rem;
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: background var(--transition-normal);
+  user-select: none;
+}
+
+.item-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tree-item.track > .item-header {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.tree-item.subTrack > .item-header,
+.tree-item.sub-track > .item-header {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.4rem 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.tree-item.lesson > .item-header {
   font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text-primary);
 }
 
-.tree-asset-meta {
+.tree-item.topic > .item-header {
+  font-weight: 450;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.tree-item.data-row > .item-header,
+.tree-item.asset > .item-header {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  padding: 0.25rem 0.5rem;
+}
+
+.tree-item.data-row > .item-header:hover,
+.tree-item.asset > .item-header:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tree-item > ul {
+  list-style: none;
+  padding-left: 1.25rem;
+  border-left: 1px dashed rgba(255, 255, 255, 0.12);
+  margin-left: 0.6rem;
+  margin-top: 0.15rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-item > ul.collapsed {
+  display: none !important;
+}
+
+.toggle-arrow {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease, background 0.15s ease, color 0.15s ease;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.toggle-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.toggle-arrow:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.toggle-arrow.empty {
+  width: 18px;
+  cursor: default;
+  visibility: hidden;
+}
+
+.node-label {
+  cursor: pointer;
+  flex: 1;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.node-duration {
   font-size: 0.75rem;
   color: var(--text-muted);
+  font-weight: 600;
+  margin-left: auto;
+  padding-left: 0.5rem;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.02em;
+}
+
+.tree-item.asset:hover .node-duration {
+  color: var(--text-accent, #00f2fe);
+}
+
+.topic-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0.1rem 0 0.35rem 2rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+  max-width: 95%;
+  font-weight: 400;
 }
 
 /* Asset Manager grid & tables */

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1 (2026-09-19)
+
+### Bug Fixes
+* **tracks:** restore fully expanded tree and branch hierarchy view in Tracks Browser modeled after Academy Timeliner
+* **tracks:** resolve missing leaf asset nodes and join asset duration in seconds (`MM:SS`) from Firestore
+* **tracks:** separate topic names from descriptive summaries and restore dashed branch connector lines
+* **ui:** add interactive toggle chevrons and global `Expand All` / `Collapse All` header controls
+
 ## 1.2.0 (2026-09-19)
 
 ### Removed

@@ -268,8 +268,14 @@
 
           <div class="tree-container">
             <div class="tree-header">
-              <h2 id="tree-title">Select a Track</h2>
-              <span class="badge" id="tree-badge">latest</span>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <h2 id="tree-title" style="margin: 0;">Select a Track</h2>
+                <span class="badge" id="tree-badge">latest</span>
+              </div>
+              <div class="tree-header-actions" id="tree-actions" style="display: none; align-items: center; gap: 8px;">
+                <button class="tree-action-btn" onclick="app.expandAllTreeNodes()" title="Expand all branches">⤢ Expand All</button>
+                <button class="tree-action-btn" onclick="app.collapseAllTreeNodes()" title="Collapse all branches">⤡ Collapse All</button>
+              </div>
             </div>
             
             <div id="tree-content" class="tree-content-area">
