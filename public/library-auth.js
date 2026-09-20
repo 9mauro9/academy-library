@@ -27109,8 +27109,8 @@ function Jx(e) {
 		PROD: !0,
 		SSR: !1,
 		VITE_SPOKEOPS_APP_ID: "academy-library",
-		VITE_SPOKEOPS_ENDPOINT: "https://spokeops.web.app/api/v1/telemetry",
-		VITE_SPOKEOPS_TOKEN: "<SPOKEOPS_TOKEN_SECRET>"
+		VITE_SPOKEOPS_ENDPOINT: "https://spokeops-509217.web.app/api/v1/telemetry",
+		VITE_SPOKEOPS_TOKEN: "spk_live_acadlib_99f2b84"
 	};
 	return {
 		apiKey: e?.apiKey || t.VITE_FIREBASE_API_KEY || Ux.apiKey,
@@ -27137,8 +27137,8 @@ function Yx(e) {
 			PROD: !0,
 			SSR: !1,
 			VITE_SPOKEOPS_APP_ID: "academy-library",
-			VITE_SPOKEOPS_ENDPOINT: "https://spokeops.web.app/api/v1/telemetry",
-			VITE_SPOKEOPS_TOKEN: "<SPOKEOPS_TOKEN_SECRET>"
+			VITE_SPOKEOPS_ENDPOINT: "https://spokeops-509217.web.app/api/v1/telemetry",
+			VITE_SPOKEOPS_TOKEN: "spk_live_acadlib_99f2b84"
 		};
 		if (e.VITE_USE_EMULATORS === "true" || e.VITE_FIREBASE_EMULATOR === "true") try {
 			Ei(Gx, "http://127.0.0.1:9099", { disableWarnings: !0 }), yh(Kx, "127.0.0.1", 8080), qx = !0, console.info("[Academy AuthCore] Connected to local Firebase Auth (9099) & Firestore (8080) emulators");
@@ -29159,7 +29159,7 @@ var _S = {
 	timer = null;
 	isActiveCadence = !0;
 	constructor() {
-		this.appId = "academy-library", this.endpoint = "https://spokeops.web.app/api/v1/telemetry", this.token = "<SPOKEOPS_TOKEN_SECRET>";
+		this.appId = "academy-library", this.endpoint = "https://spokeops-509217.web.app/api/v1/telemetry", this.token = "spk_live_acadlib_99f2b84";
 	}
 	init(e) {
 		if (!this.appId || !this.token) {
@@ -29221,13 +29221,14 @@ var _S = {
 			status: "closed"
 		});
 		if (navigator.sendBeacon) {
-			let t = new Blob([e], { type: "application/json" });
-			navigator.sendBeacon(this.endpoint, t);
+			let t = new Blob([e], { type: "application/json" }), n = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
+			navigator.sendBeacon(n, t);
 		} else fetch(this.endpoint, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"x-spoke-token": this.token
+				"x-spoke-token": this.token,
+				"x-spoke-app-id": this.appId
 			},
 			body: e,
 			keepalive: !0
@@ -29239,7 +29240,8 @@ var _S = {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"x-spoke-token": this.token
+				"x-spoke-token": this.token,
+				"x-spoke-app-id": this.appId
 			},
 			body: JSON.stringify(e)
 		}).catch((e) => {

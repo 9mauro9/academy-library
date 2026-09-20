@@ -29,9 +29,9 @@ class SpokeOpsClient {
   private isActiveCadence = true;
 
   constructor() {
-    this.appId = import.meta.env.VITE_SPOKEOPS_APP_ID || "";
-    this.endpoint = import.meta.env.VITE_SPOKEOPS_ENDPOINT || "https://spokeops.web.app/api/v1/telemetry";
-    this.token = import.meta.env.VITE_SPOKEOPS_TOKEN || "";
+    this.appId = import.meta.env.VITE_SPOKEOPS_APP_ID || "academy-library";
+    this.endpoint = import.meta.env.VITE_SPOKEOPS_ENDPOINT || "https://spokeops-509217.web.app/api/v1/telemetry";
+    this.token = import.meta.env.VITE_SPOKEOPS_TOKEN || "spk_live_acadlib_99f2b84";
   }
 
   public init(user: SpokeUser) {
@@ -127,11 +127,16 @@ class SpokeOpsClient {
 
     if (navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "application/json" });
-      navigator.sendBeacon(this.endpoint, blob);
+      const beaconUrl = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
+      navigator.sendBeacon(beaconUrl, blob);
     } else {
       fetch(this.endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-spoke-token": this.token },
+        headers: {
+          "Content-Type": "application/json",
+          "x-spoke-token": this.token,
+          "x-spoke-app-id": this.appId
+        },
         body: payload,
         keepalive: true
       }).catch(() => {});
@@ -145,7 +150,8 @@ class SpokeOpsClient {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-spoke-token": this.token
+        "x-spoke-token": this.token,
+        "x-spoke-app-id": this.appId
       },
       body: JSON.stringify(data)
     }).catch((err) => {
