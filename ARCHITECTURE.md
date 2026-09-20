@@ -132,3 +132,26 @@ Standardized user profile component (`UserProfileButton`) consuming `@academy/au
 | **Session Metadata Zone** | Truncated UID (`abc12...89xyz`) + 1-Click Copy UID, UTC Session Time | Click writes UID to `navigator.clipboard` with visual "Copied" feedback. |
 | **Action Footer** | Central Audit Ledger deep-link (Super Admin only), Sign Out button | Sign Out dispatches immutable `AUTH_SIGN_OUT` event to `/audit_logs` before session teardown. |
 | **Dismissal & Accessibility** | `useClickOutside` hook + Escape key listener | WAI-ARIA compliant (`aria-haspopup="menu"`, `aria-expanded`). Closes cleanly on outside click or Esc. |
+
+---
+
+## 📡 SpokeOps Client Telemetry & Security Audit (AES Version 3)
+
+The application integrates with the centralized **SpokeOps** platform using the client telemetry module at `src/telemetry/spokeOpsClient.ts`.
+
+### 1. Architectural Capabilities
+- **Automated Session Heartbeats**: Emits 2-minute active session heartbeats (`120,000` ms) containing session ID, authenticated user UID, email, roles, client metadata (viewport, path, user-agent), and active presence state.
+- **Tab Visibility Cadence Optimization**: Implements AES v3 adaptive cadence:
+  - When tab visibility switches to `hidden`, interval throttles down to 5 minutes (`300,000` ms) to minimize bandwidth.
+  - When tab returns to `visible`, immediately fires an active ping and restores the 2-minute heartbeat.
+- **Teardown & Clean Closure**: Intercepts `window.beforeunload` to emit a `"closed"` session event via `navigator.sendBeacon` (falling back to `fetch` with `keepalive: true`).
+- **Security Audit Event Dispatch**: `logAudit` dispatches immutable audit events with automated credential redaction (masking `password`, `token`, `secret`, `apikey`, `credential`, `auth` values with `[REDACTED]`).
+- **Non-Blocking Fault Tolerance**: All network dispatches catch network and offline errors non-blockingly, preventing telemetry outages from interrupting core user operations.
+
+### 2. Environment Configuration
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `VITE_SPOKEOPS_ENDPOINT` | Ingestion API endpoint | `https://spokeops.web.app/api/v1/telemetry` |
+| `VITE_SPOKEOPS_APP_ID` | Application identifier | `academy-library` |
+| `VITE_SPOKEOPS_TOKEN` | Tenant authentication token | `<SPOKEOPS_TOKEN_SECRET>` |
+

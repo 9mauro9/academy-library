@@ -1,9 +1,20 @@
 import { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider, AuthGate, UserProfileButton, useAuth } from '@academy/auth-core';
+import { spokeOps } from '@/telemetry/spokeOpsClient';
 
 function LibraryAppShellManager() {
   const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (currentUser) {
+      spokeOps.init({
+        uid: currentUser.uid,
+        email: currentUser.email || "user@academy.internal",
+        roles: (currentUser as any).roles || ((currentUser as any).role ? [(currentUser as any).role] : ["instructor"])
+      });
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const shell = document.getElementById('library-app-shell');

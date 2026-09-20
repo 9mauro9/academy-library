@@ -27107,7 +27107,10 @@ function Jx(e) {
 		DEV: !1,
 		MODE: "production",
 		PROD: !0,
-		SSR: !1
+		SSR: !1,
+		VITE_SPOKEOPS_APP_ID: "academy-library",
+		VITE_SPOKEOPS_ENDPOINT: "https://spokeops.web.app/api/v1/telemetry",
+		VITE_SPOKEOPS_TOKEN: "<SPOKEOPS_TOKEN_SECRET>"
 	};
 	return {
 		apiKey: e?.apiKey || t.VITE_FIREBASE_API_KEY || Ux.apiKey,
@@ -27132,7 +27135,10 @@ function Yx(e) {
 			DEV: !1,
 			MODE: "production",
 			PROD: !0,
-			SSR: !1
+			SSR: !1,
+			VITE_SPOKEOPS_APP_ID: "academy-library",
+			VITE_SPOKEOPS_ENDPOINT: "https://spokeops.web.app/api/v1/telemetry",
+			VITE_SPOKEOPS_TOKEN: "<SPOKEOPS_TOKEN_SECRET>"
 		};
 		if (e.VITE_USE_EMULATORS === "true" || e.VITE_FIREBASE_EMULATOR === "true") try {
 			Ei(Gx, "http://127.0.0.1:9099", { disableWarnings: !0 }), yh(Kx, "127.0.0.1", 8080), qx = !0, console.info("[Academy AuthCore] Connected to local Firebase Auth (9099) & Firestore (8080) emulators");
@@ -29144,12 +29150,126 @@ var _S = {
 			})
 		})]
 	}) : null;
-};
+}, wS = new class {
+	appId;
+	endpoint;
+	token;
+	sessionId = null;
+	currentUser = null;
+	timer = null;
+	isActiveCadence = !0;
+	constructor() {
+		this.appId = "academy-library", this.endpoint = "https://spokeops.web.app/api/v1/telemetry", this.token = "<SPOKEOPS_TOKEN_SECRET>";
+	}
+	init(e) {
+		if (!this.appId || !this.token) {
+			console.warn(`[SpokeOps] Skipping telemetry for ${this.appId || "unknown app"}: missing VITE_SPOKEOPS_APP_ID or VITE_SPOKEOPS_TOKEN.`);
+			return;
+		}
+		this.currentUser = e, this.sessionId = `sess_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`, this.sendPing("active"), this.startHeartbeat(12e4), document.addEventListener("visibilitychange", () => {
+			document.visibilityState === "hidden" ? (this.isActiveCadence = !1, this.startHeartbeat(3e5)) : (this.isActiveCadence = !0, this.startHeartbeat(12e4), this.sendPing("active"));
+		}), window.addEventListener("beforeunload", () => {
+			this.closeSession();
+		});
+	}
+	startHeartbeat(e) {
+		this.timer && clearInterval(this.timer), this.timer = setInterval(() => {
+			this.sendPing(this.isActiveCadence ? "active" : "idle");
+		}, e);
+	}
+	sendPing(e) {
+		!this.sessionId || !this.currentUser || this.dispatch({
+			type: "session_heartbeat",
+			appId: this.appId,
+			sessionId: this.sessionId,
+			userId: this.currentUser.uid,
+			userEmail: this.currentUser.email,
+			userRoles: this.currentUser.roles,
+			status: e,
+			clientMetadata: {
+				userAgent: navigator.userAgent,
+				viewport: `${window.innerWidth}x${window.innerHeight}`,
+				path: window.location.pathname
+			}
+		});
+	}
+	logAudit(e) {
+		!this.sessionId || !this.currentUser || this.dispatch({
+			type: "audit_event",
+			appId: this.appId,
+			sessionId: this.sessionId,
+			userId: this.currentUser.uid,
+			userEmail: this.currentUser.email,
+			roleAtExecution: this.currentUser.roles[0] || "authenticated_user",
+			action: e.action,
+			resourceType: e.resourceType,
+			resourceId: e.resourceId,
+			status: e.status,
+			metadata: this.sanitize(e.metadata || {}),
+			timestamp: (/* @__PURE__ */ new Date()).toISOString()
+		});
+	}
+	closeSession() {
+		if (!this.sessionId || !this.currentUser) return;
+		let e = JSON.stringify({
+			type: "session_heartbeat",
+			appId: this.appId,
+			sessionId: this.sessionId,
+			userId: this.currentUser.uid,
+			userEmail: this.currentUser.email,
+			userRoles: this.currentUser.roles,
+			status: "closed"
+		});
+		if (navigator.sendBeacon) {
+			let t = new Blob([e], { type: "application/json" });
+			navigator.sendBeacon(this.endpoint, t);
+		} else fetch(this.endpoint, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-spoke-token": this.token
+			},
+			body: e,
+			keepalive: !0
+		}).catch(() => {});
+		this.timer && clearInterval(this.timer);
+	}
+	dispatch(e) {
+		fetch(this.endpoint, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-spoke-token": this.token
+			},
+			body: JSON.stringify(e)
+		}).catch((e) => {
+			console.warn(`[SpokeOps] Failed to emit telemetry payload for ${this.appId}:`, e);
+		});
+	}
+	sanitize(e) {
+		let t = { ...e }, n = [
+			"password",
+			"token",
+			"secret",
+			"apikey",
+			"credential",
+			"auth"
+		];
+		for (let e of Object.keys(t)) n.some((t) => e.toLowerCase().includes(t)) && (t[e] = "[REDACTED]");
+		return t;
+	}
+}();
 //#endregion
 //#region src/mountProfile.tsx
-function wS() {
+function TS() {
 	let { currentUser: e } = mS();
 	return (0, _.useEffect)(() => {
+		e && wS.init({
+			uid: e.uid,
+			email: e.email || "user@academy.internal",
+			roles: e.roles || (e.role ? [e.role] : ["instructor"])
+		});
+	}, [e]), (0, _.useEffect)(() => {
 		let t = document.getElementById("library-app-shell"), n = document.getElementById("library-gate-root"), r = document.getElementById("profileBtnContainer");
 		if (e) {
 			if (t && (t.style.display = "flex"), n && (n.style.display = "none"), r && !r._reactRoot) {
@@ -29166,22 +29286,22 @@ function wS() {
 		};
 	}, [e]), null;
 }
-function TS() {
+function ES() {
 	return /* @__PURE__ */ (0, $.jsx)(pS, {
 		appId: "library",
 		children: /* @__PURE__ */ (0, $.jsx)(yS, {
 			appId: "library",
 			appName: "Academy Library",
-			children: /* @__PURE__ */ (0, $.jsx)(wS, {})
+			children: /* @__PURE__ */ (0, $.jsx)(TS, {})
 		})
 	});
 }
-function ES() {
+function DS() {
 	let e = document.getElementById("library-gate-root");
 	if (e && !e._reactRoot) {
 		let t = v.createRoot(e);
-		e._reactRoot = t, t.render(/* @__PURE__ */ (0, $.jsx)(TS, {}));
+		e._reactRoot = t, t.render(/* @__PURE__ */ (0, $.jsx)(ES, {}));
 	}
 }
-document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", ES) : ES();
+document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", DS) : DS();
 //#endregion

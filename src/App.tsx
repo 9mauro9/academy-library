@@ -1,4 +1,5 @@
 import { AuthProvider, AuthGate, useAuth, useAudit } from '@academy/auth-core';
+import { spokeOps } from '@/telemetry/spokeOpsClient';
 import { I18nProvider } from './i18n/I18nContext';
 import { Header } from './components/Header';
 import { DataManager } from './components/DataManager';
@@ -7,6 +8,16 @@ import { useEffect } from 'react';
 function LibraryMain() {
   const { currentUser, isSuperAdmin, role, signOut } = useAuth();
   const { logNavigation } = useAudit({ appId: 'library' });
+
+  useEffect(() => {
+    if (currentUser) {
+      spokeOps.init({
+        uid: currentUser.uid,
+        email: currentUser.email || "user@academy.internal",
+        roles: (currentUser as any).roles || ((currentUser as any).role ? [(currentUser as any).role] : ["instructor"])
+      });
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     logNavigation('library_catalog', { view: 'data_manager' });

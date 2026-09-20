@@ -105,6 +105,16 @@ npx firebase deploy --only hosting:academy-library
 
 ---
 
+## 📡 SpokeOps Client Telemetry & Audit Logging (AES v3)
+
+Instrumented with the standard SpokeOps client telemetry module (`src/telemetry/spokeOpsClient.ts`):
+- **Presence & Duration Tracking**: Automated 2-minute active heartbeat pings with adaptive tab visibility cadence (throttled to 5 minutes when tab is in background, immediate active ping upon return).
+- **Session Lifecycle Management**: Deterministic `init()` upon authentication resolution and `closeSession()` teardown on tab closure via `navigator.sendBeacon` / keepalive fetch.
+- **Security Audit Logging**: Captures operational events with sensitive key sanitization (`[REDACTED]`).
+- **Configuration**: Managed via `.env.local` (`VITE_SPOKEOPS_APP_ID`, `VITE_SPOKEOPS_ENDPOINT`, `VITE_SPOKEOPS_TOKEN`).
+
+---
+
 ## Legal Disclaimer & Terms of Use
 All applications across the Academy suite include an accessible, standardized **Legal Disclaimer** modal accessible via the header trigger:
 - **Nature of Software**: This software constitutes an experimental, non-production build provided solely for internal testing, evaluation, and investigational use cases.
