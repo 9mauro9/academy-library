@@ -16,7 +16,12 @@ function LibraryMain() {
         email: currentUser.email || "user@academy.internal",
         roles: (currentUser as any).roles || ((currentUser as any).role ? [(currentUser as any).role] : ["instructor"])
       });
+    } else {
+      spokeOps.closeSession();
     }
+    return () => {
+      spokeOps.closeSession();
+    };
   }, [currentUser]);
 
   useEffect(() => {

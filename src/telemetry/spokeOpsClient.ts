@@ -65,11 +65,22 @@ class SpokeOpsClient {
     window.addEventListener("beforeunload", () => {
       this.closeSession();
     });
+    window.addEventListener("pagehide", () => {
+      this.closeSession();
+    });
   }
 
   private startHeartbeat(intervalMs: number) {
     if (this.timer) clearInterval(this.timer);
+    if (!this.sessionId || !this.currentUser) return;
     this.timer = setInterval(() => {
+      if (!this.sessionId || !this.currentUser) {
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+        return;
+      }
       this.sendPing(this.isActiveCadence ? "active" : "idle");
     }, intervalMs);
   }
@@ -113,23 +124,24 @@ class SpokeOpsClient {
   }
 
   public closeSession() {
-    if (!this.sessionId || !this.currentUser) return;
+    if (!this.sessionId && !this.currentUser) return;
 
     const payload = JSON.stringify({
       type: "session_heartbeat",
       appId: this.appId,
-      sessionId: this.sessionId,
-      userId: this.currentUser.uid,
-      userEmail: this.currentUser.email,
-      userRoles: this.currentUser.roles,
+      sessionId: this.sessionId || "unknown",
+      userId: this.currentUser?.uid || "anonymous",
+      userEmail: this.currentUser?.email || "anonymous",
+      userRoles: this.currentUser?.roles || ["viewer"],
       status: "closed"
     });
 
-    if (navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: "application/json" });
-      const beaconUrl = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
-      navigator.sendBeacon(beaconUrl, blob);
-    } else {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+
+    if (typeof fetch !== "undefined") {
       fetch(this.endpoint, {
         method: "POST",
         headers: {
@@ -139,10 +151,22 @@ class SpokeOpsClient {
         },
         body: payload,
         keepalive: true
-      }).catch(() => {});
+      }).catch(() => {
+        if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: "application/json" });
+          const beaconUrl = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
+          navigator.sendBeacon(beaconUrl, blob);
+        }
+      });
+    } else if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: "application/json" });
+      const beaconUrl = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
+      navigator.sendBeacon(beaconUrl, blob);
     }
 
-    if (this.timer) clearInterval(this.timer);
+    this.sessionId = null;
+    this.currentUser = null;
+    this.isActiveCadence = false;
   }
 
   private dispatch(data: any) {
