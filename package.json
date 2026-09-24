@@ -23,7 +23,9 @@
     "test:rules": "jest --testMatch '<rootDir>/test/firestore.rules.test.cjs' --forceExit --detectOpenHandles",
     "test": "npm run test:rules",
     "generate-architecture-diagrams": "node scripts/sync-docs.cjs",
-    "test:i18n": "jest --testMatch \"<rootDir>/test/i18n.test.cjs\""
+    "test:i18n": "jest --testMatch \"<rootDir>/test/i18n.test.cjs\"",
+    "standards:check": "bash .antigravity/skills/m-dev-standards/aes-v3/scripts/validate-aes.sh --root . && bash .antigravity/skills/m-dev-standards/hub-spoke/scripts/validate-hub-spoke.sh --root .",
+    "standards:audit": "bash .antigravity/skills/m-dev-standards/aes-v3/scripts/validate-aes.sh --root . --report-only && bash .antigravity/skills/m-dev-standards/hub-spoke/scripts/validate-hub-spoke.sh --root . --report-only"
   },
   "dependencies": {
     "@academy/auth-core": "file:../packages/auth-core",
