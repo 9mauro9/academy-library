@@ -29170,12 +29170,18 @@ var _S = {
 			document.visibilityState === "hidden" ? (this.isActiveCadence = !1, this.startHeartbeat(3e5)) : (this.isActiveCadence = !0, this.startHeartbeat(12e4), this.sendPing("active"));
 		}), window.addEventListener("beforeunload", () => {
 			this.closeSession();
+		}), window.addEventListener("pagehide", () => {
+			this.closeSession();
 		});
 	}
 	startHeartbeat(e) {
-		this.timer && clearInterval(this.timer), this.timer = setInterval(() => {
+		this.timer && clearInterval(this.timer), !(!this.sessionId || !this.currentUser) && (this.timer = setInterval(() => {
+			if (!this.sessionId || !this.currentUser) {
+				this.timer &&= (clearInterval(this.timer), null);
+				return;
+			}
 			this.sendPing(this.isActiveCadence ? "active" : "idle");
-		}, e);
+		}, e));
 	}
 	sendPing(e) {
 		!this.sessionId || !this.currentUser || this.dispatch({
@@ -29210,20 +29216,17 @@ var _S = {
 		});
 	}
 	closeSession() {
-		if (!this.sessionId || !this.currentUser) return;
+		if (!this.sessionId && !this.currentUser) return;
 		let e = JSON.stringify({
 			type: "session_heartbeat",
 			appId: this.appId,
-			sessionId: this.sessionId,
-			userId: this.currentUser.uid,
-			userEmail: this.currentUser.email,
-			userRoles: this.currentUser.roles,
+			sessionId: this.sessionId || "unknown",
+			userId: this.currentUser?.uid || "anonymous",
+			userEmail: this.currentUser?.email || "anonymous",
+			userRoles: this.currentUser?.roles || ["viewer"],
 			status: "closed"
 		});
-		if (navigator.sendBeacon) {
-			let t = new Blob([e], { type: "application/json" }), n = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
-			navigator.sendBeacon(n, t);
-		} else fetch(this.endpoint, {
+		if (this.timer &&= (clearInterval(this.timer), null), typeof fetch < "u") fetch(this.endpoint, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -29232,8 +29235,17 @@ var _S = {
 			},
 			body: e,
 			keepalive: !0
-		}).catch(() => {});
-		this.timer && clearInterval(this.timer);
+		}).catch(() => {
+			if (typeof navigator < "u" && navigator.sendBeacon) {
+				let t = new Blob([e], { type: "application/json" }), n = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
+				navigator.sendBeacon(n, t);
+			}
+		});
+		else if (typeof navigator < "u" && navigator.sendBeacon) {
+			let t = new Blob([e], { type: "application/json" }), n = `${this.endpoint}?spokeToken=${encodeURIComponent(this.token)}&appId=${encodeURIComponent(this.appId)}`;
+			navigator.sendBeacon(n, t);
+		}
+		this.sessionId = null, this.currentUser = null, this.isActiveCadence = !1;
 	}
 	dispatch(e) {
 		fetch(this.endpoint, {
@@ -29265,13 +29277,13 @@ var _S = {
 //#region src/mountProfile.tsx
 function TS() {
 	let { currentUser: e } = mS();
-	return (0, _.useEffect)(() => {
-		e && wS.init({
-			uid: e.uid,
-			email: e.email || "user@academy.internal",
-			roles: e.roles || (e.role ? [e.role] : ["instructor"])
-		});
-	}, [e]), (0, _.useEffect)(() => {
+	return (0, _.useEffect)(() => (e ? wS.init({
+		uid: e.uid,
+		email: e.email || "user@academy.internal",
+		roles: e.roles || (e.role ? [e.role] : ["instructor"])
+	}) : wS.closeSession(), () => {
+		wS.closeSession();
+	}), [e]), (0, _.useEffect)(() => {
 		let t = document.getElementById("library-app-shell"), n = document.getElementById("library-gate-root"), r = document.getElementById("profileBtnContainer");
 		if (e) {
 			if (t && (t.style.display = "flex"), n && (n.style.display = "none"), r && !r._reactRoot) {

@@ -37,7 +37,9 @@ function getInitialLocale(): SupportedLocale {
     if (saved && (saved in LOCALES_MAP)) {
       return saved as SupportedLocale;
     }
-  } catch {}
+  } catch (error) {
+    console.warn('[AES v3 I18n] Failed to read locale from localStorage:', error);
+  }
 
   try {
     const browserLang = navigator.language || (navigator as any).userLanguage || '';
@@ -47,7 +49,9 @@ function getInitialLocale(): SupportedLocale {
     if (browserLang.startsWith('de')) return 'de-DE';
     if (browserLang.startsWith('pt')) return 'pt-BR';
     if (browserLang.startsWith('pl')) return 'pl-PL';
-  } catch {}
+  } catch (error) {
+    console.warn('[AES v3 I18n] Failed to determine browser language:', error);
+  }
 
   return 'en-US';
 }
@@ -73,7 +77,9 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       localStorage.setItem(STORAGE_KEY, newLocale);
       document.documentElement.lang = newLocale === 'pt-BR' ? 'pt-BR' : newLocale.split('-')[0];
-    } catch {}
+    } catch (error) {
+      console.warn('[AES v3 I18n] Failed to persist locale to localStorage:', error);
+    }
 
     try {
       if (typeof BroadcastChannel !== 'undefined') {
@@ -81,7 +87,9 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         channel.postMessage({ type: 'LOCALE_CHANGED', locale: newLocale });
         channel.close();
       }
-    } catch {}
+    } catch (error) {
+      console.warn('[AES v3 I18n] Failed to broadcast locale change:', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -98,7 +106,9 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         };
       }
-    } catch {}
+    } catch (error) {
+      console.warn('[AES v3 I18n] Failed to initialize BroadcastChannel listener:', error);
+    }
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue && e.newValue in LOCALES_MAP) {

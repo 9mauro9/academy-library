@@ -1,6 +1,7 @@
 import { AuthProvider, AuthGate, useAuth, useAudit } from '@academy/auth-core';
 import { spokeOps } from '@/telemetry/spokeOpsClient';
 import { I18nProvider } from './i18n/I18nContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Header } from './components/Header';
 import { DataManager } from './components/DataManager';
 import { useEffect } from 'react';
@@ -45,13 +46,15 @@ function LibraryMain() {
 
 export function App() {
   return (
-    <AuthProvider appId="library">
-      <I18nProvider>
-        <AuthGate appId="library" appName="Academy Library">
-          <LibraryMain />
-        </AuthGate>
-      </I18nProvider>
-    </AuthProvider>
+    <ErrorBoundary spokeName="LibraryApp">
+      <AuthProvider appId="library">
+        <I18nProvider>
+          <AuthGate appId="library" appName="Academy Library">
+            <LibraryMain />
+          </AuthGate>
+        </I18nProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

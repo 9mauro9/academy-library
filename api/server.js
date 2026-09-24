@@ -44,7 +44,9 @@ if (getApps().length === 0) {
 const db = getFirestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (e) {}
+} catch (e) {
+  console.warn('[AES v3 Server] Failed to configure Firestore db.settings:', e.message);
+}
 
 // In-Memory Cache for Assets and Curriculum Map
 class MemoryCache {
@@ -862,7 +864,11 @@ app.post('/api/upload-unstructured', upload.single('custom_file'), async (req, r
     await cache.loadFromFirestore();
 
     // 3. Delete uploaded temp file
-    try { fs.unlinkSync(uploadedFilePath); } catch (e) {}
+    try { 
+      fs.unlinkSync(uploadedFilePath); 
+    } catch (e) {
+      console.warn('[AES v3 Server] Failed to clean up temp file:', uploadedFilePath, e.message);
+    }
 
     res.json({
       success: true,
