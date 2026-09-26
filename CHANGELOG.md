@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.1.0](https://github.com/9mauro9/academy-library/compare/v1.0.0...v1.1.0) (2026-09-26)
+
+
+### Features
+
+* **auth:** integrate centralized auth and audit subsystem with immutable ledger (OS 2.2) ([899d2f2](https://github.com/9mauro9/academy-library/commit/899d2f2b88f467d05b86babe4f5297d66d48b771))
+* **auth:** integrate zero-trust AuthGate and standard legal disclaimer ([b51cfc5](https://github.com/9mauro9/academy-library/commit/b51cfc576fc93aa3c7cba07b1d4b389c8ed6e19e))
+* **auth:** replace email/password auth with Google Sign-In ([df6b76a](https://github.com/9mauro9/academy-library/commit/df6b76ace0310d322189ddf45b8d8ea34645625e))
+* **auth:** replace email/password auth with Google Sign-In ([a471883](https://github.com/9mauro9/academy-library/commit/a4718839cd1c403c824c25b5588353f825ba18c6))
+* **cms:** OS 2.2 structural upgrade — Firestore-native, admin write guard ([c3acd9c](https://github.com/9mauro9/academy-library/commit/c3acd9c3d5ba65c3f8aaaa9203964bfac296ebd3))
+* **cms:** OS 2.2 structural upgrade — Firestore-native, Google auth, admin write guard ([5e1d99f](https://github.com/9mauro9/academy-library/commit/5e1d99f42353eeabe09f90f2a51624e0b0f35df2))
+* **cms:** restore original CMS portal with Google auth gate ([0f2d3f0](https://github.com/9mauro9/academy-library/commit/0f2d3f06a82a950ea863484e2286ce66fc528183))
+* **cms:** restore original CMS portal with Google auth gate ([bc9022b](https://github.com/9mauro9/academy-library/commit/bc9022be5af4863eb1d949a0d437462c73d68631))
+* **i18n:** add Brazilian Portuguese (pt-BR) language support (OS 2.2) ([f15312a](https://github.com/9mauro9/academy-library/commit/f15312a01c84e66959e0cc9a7eaec40d3921e24c))
+* **i18n:** implement multilingual system and dynamic subagent standards ([bc916d4](https://github.com/9mauro9/academy-library/commit/bc916d47ffc6e6d458ffae3ba5ba3dcf18360e3c))
+* **i18n:** implement multilingual system and dynamic subagent standards ([5947bc3](https://github.com/9mauro9/academy-library/commit/5947bc3fc3acc517e616a1dbc40b3a248874f249))
+* **legal:** enforce mandatory post-login disclaimer modal and eliminate bypass vectors ([638005a](https://github.com/9mauro9/academy-library/commit/638005a6660ae2d5bc9f31d4c065f35ce92e67fe))
+* **profile:** mount universal UserProfileButton in TopBar and Header (OS 2.2) ([587004e](https://github.com/9mauro9/academy-library/commit/587004e2ee7fd8e5bb64739519c9e8830aafd60e))
+* **standards:** resolve AES v3 ZSM deficiencies and implement ErrorBoundary for 100% compliance ([25b1dd6](https://github.com/9mauro9/academy-library/commit/25b1dd6bd6f8e69bec1a71e7d4136ae2374b2f56))
+* **sync:** implement master sheet synchronization engine and update docs ([060d304](https://github.com/9mauro9/academy-library/commit/060d30400a8bf218f44c7ac4e87dc5c3c1578467))
+* **sync:** update default Academy Tracking spreadsheet ID to 17zHyvRuBhf5cdBE1PGY4B1Yw7Pz3sLE4vBFgCvuEVrY ([2af5690](https://github.com/9mauro9/academy-library/commit/2af56907619ff0dc209ab2c0513ac9b54956e104))
+* **sync:** upgrade master sheet synchronization engine to R.A.E.S. v3 with multi-agent AI layer ([5767835](https://github.com/9mauro9/academy-library/commit/576783577595fab8ce84b267196174a96c55ef08))
+* **telemetry:** integrate spokeops aes v3 client telemetry and audit logging ([82deb63](https://github.com/9mauro9/academy-library/commit/82deb631dcecd563dfed12b2fe9c0c5039877a81))
+* **ui:** add master sheet pre-sync module to left navigation sidebar ([94da720](https://github.com/9mauro9/academy-library/commit/94da72070e656cbc72e3e21994d2cce11e9bc7f1))
+
+
+### Bug Fixes
+
+* **i18n:** expand comprehensive full-screen translations and legal disclaimer modal ([b98ca9c](https://github.com/9mauro9/academy-library/commit/b98ca9c78eea52cbb1366a1e311b655bf55bc08d))
+* **i18n:** localize disclaimer trigger badge to Avviso Legale in Italian ([4ac7d64](https://github.com/9mauro9/academy-library/commit/4ac7d6401869147f81b1f2b5b95fed8c1e15d831))
+* **i18n:** standardize language selector dropdown styling and UI spec (OS 2.2) ([6b82fef](https://github.com/9mauro9/academy-library/commit/6b82fefcece1ddc855c2b2ebc4e041de5160f308))
+* **library:** restore full CMS portal interface with zero-leak auth gate and universal profile button ([71c5666](https://github.com/9mauro9/academy-library/commit/71c5666e493b4db7b7e57118a5f06444a182eb90))
+* **library:** serve unified OS 2.2 React app with universal UserProfileButton (OS 2.2) ([d284e15](https://github.com/9mauro9/academy-library/commit/d284e154acef1b64069eb3af5e38bd9573b276ea))
+* **meta:** correct browser title and package name from Academy Builder to Academy Library ([5f5ec53](https://github.com/9mauro9/academy-library/commit/5f5ec5347f0bf1d7edbd8c6c17876c1e0a07ebd1))
+* **meta:** correct browser title and package name from Academy Builder to Academy Library ([d4ae716](https://github.com/9mauro9/academy-library/commit/d4ae716060a26e898772e59817d3e6b2550af566))
+* **sync:** eliminate duplicate click handlers and ensure idempotent drawer toggle ([5e17b2d](https://github.com/9mauro9/academy-library/commit/5e17b2db4e3d0b9ebda8513c00dec82861e19df8))
+* **sync:** resolve Data Ingestion freeze and enforce canonical curriculum hierarchy ([18a0c65](https://github.com/9mauro9/academy-library/commit/18a0c658820c10fe7c5a02302738e39a8a263168))
+* **sync:** resolve UI interactivity, cache invalidation, and interactive metric cards ([8d82e37](https://github.com/9mauro9/academy-library/commit/8d82e37a3be2cbe0db66adb42f59e6ad2ed5ad67))
+* **telemetry:** configure live SpokeOps endpoint, app ID, and authentic token ([21f3903](https://github.com/9mauro9/academy-library/commit/21f39039e4c5f9779b8face1e6c6f758dd300b98))
+* **telemetry:** teardown SpokeOps session on logout and unmount ([c8dcf29](https://github.com/9mauro9/academy-library/commit/c8dcf29d808a46d62ae2d11f85f3e0cf3c476b3c))
+* **tracks:** restore fully expanded tree hierarchy and branch view in tracks browser ([02e60cc](https://github.com/9mauro9/academy-library/commit/02e60cc4ed80707f4c6d24e9c440b76f6b4e921a))
+* **ui:** replace Academy Builder interface with DataManager CMS view ([ee9c697](https://github.com/9mauro9/academy-library/commit/ee9c697a9e00b77fa336dc7d5ead350708826583))
+* **ui:** replace Academy Builder interface with DataManager CMS view ([a83e3f6](https://github.com/9mauro9/academy-library/commit/a83e3f681fe00264adddb4998be370e3b15f6b74))
+
 ## 1.2.1 (2026-09-19)
 
 ### Bug Fixes
